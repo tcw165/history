@@ -78,7 +78,8 @@
 ;;; Change Log:
 ;;
 ;; 2014-12-28
-;; * Support `history-ignore-buffer-names' to ignore some buffer with specific names.
+;; * Support `history-ignore-buffer-names' to ignore some buffer with specific
+;;   names.
 ;; * Enhance visualization of `history-show-history'.
 ;; * Add `history-mode'.
 ;;
@@ -244,7 +245,7 @@
                                   (propertize "*"
                                               'face 'history-current-history)
                                 (propertize "."
-                                            ' face 'history-other-history)))))
+                                            'face 'history-other-history)))))
     (concat prompt value)))
 
 (defun history-menu-enable? ()
@@ -323,7 +324,7 @@ the history will be deleted immediately."
           (thing (thing-at-point 'symbol t)))
       ;; Create history.
       (setq history (plist-put history :marker (copy-marker (point) t)))
-      ;; Cache the symbol string if necessary.q
+      ;; Cache the symbol string if necessary.
       (and is-thing? thing
            (setq history (plist-put history :symbol thing)))
       ;; Add to databse.
