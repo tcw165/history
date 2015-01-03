@@ -3,6 +3,7 @@
 ;; Copyright (C) 2014
 ;;
 ;; Author: boyw165
+;; Version: 20141204.1100
 ;; URL: https://github.com/boyw165/history
 ;; Package-Requires: ((emacs "24.3") (cl-lib "0.5"))
 ;;
@@ -23,11 +24,13 @@
 ;;
 ;;; Commentary:
 ;;
-;; This tool is similar to `pop-mark' or `pop-global-mark' but more powerful.
-;; You can go through the whole history without losing them. More specific,
-;; `pop-global-mark' will use the latest record but also discard it. But this
-;; tool will preserve all the history. The tool will smartly ignored killed
-;; buffers or invalid symbol string.
+;; This tool is similar to `pop-global-mark' but more powerful. You can go
+;; through the whole history without losing them. Actually, `pop-global-mark'
+;; will use the latest record but also discard it. But this tool will preserve
+;; all the history and smartly ignored killed buffers or invalid symbol string.
+;;
+;; You'll feel the power and convenience of using `his-add-history', 
+;; `his-prev-history' and `his-next-history' instead of built-in old way.
 ;;
 ;; Basic Concept:
 ;; --------------
@@ -44,26 +47,26 @@
 ;;
 ;; Usage:
 ;; ------
-;; * M-x history-mode
+;; * M-x `history-mode'
 ;;   Add menu items and tool-bar items of history utility.
-;; * (his-add-history)
+;; * (`history-add-history')
 ;;   Save current point and buffer as a history into the database.
-;; * (his-add-history t)
+;; * (`history-add-history' t)
 ;;   Like above, but also save symbol string at point. When navigating to the
-;;   history, the tool compare the matched string so that it make sure the history
-;;   is VALID.
-;; * M-x his-prev-history
+;;   history, the tool compare the matched string so that it make sure the
+;;   history is VALID.
+;; * M-x `history-prev-history'
 ;;   Goto previous history.
-;; * M-x his-next-history
+;; * M-x `history-next-history'
 ;;   Goto new history.
-;; * M-x his-kill-histories
+;; * M-x `history-kill-histories'
 ;;   Discard whole history database.
 ;;
 ;; Customization:
 ;; --------------
-;; * `his-history-max'
+;; * `history-history-max'
 ;;   The maximum length of the history database.
-;; * `his-ignore-buffer-names'
+;; * `history-ignore-buffer-names'
 ;;   A REGEXP list to ignore specific buffers.
 ;;
 ;; TODO:
@@ -75,8 +78,8 @@
 ;;; Change Log:
 ;;
 ;; 2014-12-28
-;; * Support `his-ignore-buffer-names' to ignore some buffer with specific names.
-;; * Enhance visualization of `his-show-history'.
+;; * Support `history-ignore-buffer-names' to ignore some buffer with specific names.
+;; * Enhance visualization of `history-show-history'.
 ;; * Add `history-mode'.
 ;;
 ;; 2014-06-01
@@ -96,38 +99,38 @@
   "Face of history."
   :group 'history)
 
-(defface his-prompt
+(defface history-prompt
   '((t (:inherit 'minibuffer-prompt)))
-  "Face of prompt when calling `his-goto-history'."
+  "Face of prompt when calling `history-goto-history'."
   :group 'history-face)
 
-(defface his-current-history
+(defface history-current-history
   '((t (:foreground "black" :background "gold1" :widget 'bold)))
-  "Face of symbol for current history when calling `his-goto-history'."
+  "Face of symbol for current history when calling `history-goto-history'."
   :group 'history-face)
 
-(defface his-other-history
+(defface history-other-history
   '((t (:foreground "dim gray" :background "#d1f5ea")))
-  "Face of symbol for other history when calling `his-goto-history'."
+  "Face of symbol for other history when calling `history-goto-history'."
   :group 'history-face)
 
-(defcustom his-history-max 64
+(defcustom history-history-max 64
   "The maximum lenght of history."
   :type 'integer
   :group 'history)
 
-(defcustom his-ignore-buffer-names '("\*.*\*")
+(defcustom history-ignore-buffer-names '("\\*.*\\*")
   "Ths REGEXP list for matched ignore buffer names."
   :type '(repeat regexp)
   :group 'history)
 
-(defvar his-histories nil
-  "The history database. see `his-add-history' for details.")
+(defvar history-histories nil
+  "The history database. see `history-add-history' for details.")
 
-(defvar his-index 0
+(defvar history-index 0
   "The index of current history in the database.")
 
-(defun his-same-line? (pos1 pos2)
+(defun history-same-line? (pos1 pos2)
   (let ((line-pos1 (save-excursion
                      (goto-char pos1)
                      (beginning-of-line)
@@ -138,21 +141,21 @@
                      (point))))
     (= line-pos1 line-pos2)))
 
-(defun his-add-history-internal (history)
+(defun history-add-history-internal (history)
   ;; Discard old histories.
-  (and his-histories (> his-index 0)
-       (let ((current (nthcdr his-index his-histories)))
-         (setq his-histories (cdr current))))
+  (and history-histories (> history-index 0)
+       (let ((current (nthcdr history-index history-histories)))
+         (setq history-histories (cdr current))))
   ;; Add new history.
-  (push history his-histories)
-  (setq his-index 0)
-  ;; Keep total amount of history is less than `his-history-max'.
-  (and (> (length his-histories) his-history-max)
-       (setcdr (nthcdr (1- his-history-max) his-histories) nil)))
+  (push history history-histories)
+  (setq history-index 0)
+  ;; Keep total amount of history is less than `history-history-max'.
+  (and (> (length history-histories) history-history-max)
+       (setcdr (nthcdr (1- history-history-max) history-histories) nil)))
 
-(defun his-remove-invalid-history ()
+(defun history-remove-invalid-history ()
   "Go through the histories and check each buffer's validness."
-  (dolist (history his-histories)
+  (dolist (history history-histories)
     (let* ((marker (plist-get history :marker))
            (buffer (marker-buffer marker))
            (pos (marker-position marker))
@@ -165,25 +168,25 @@
                 (goto-char pos)
                 (unless (equal symbol (thing-at-point 'symbol t))
                   ;; Remove it if thing at point doesn't match history.
-                  (setq his-histories (delq history his-histories))))))
+                  (setq history-histories (delq history history-histories))))))
         ;; Remove it if its buffer was killed.
-        (setq his-histories (delq history his-histories)))))
+        (setq history-histories (delq history history-histories)))))
   ;; Update index if necessary.
-  (when (and his-histories
-             (>= his-index (length his-histories)))
-    (setq his-index (1- (length his-histories)))))
+  (when (and history-histories
+             (>= history-index (length history-histories)))
+    (setq history-index (1- (length history-histories)))))
 
-(defun his-move-history (step)
-  (setq his-index (+ his-index step))
+(defun history-move-history (step)
+  (setq history-index (+ history-index step))
   (cond
-   ((>= his-index (length his-histories))
-    (setq his-index (1- (length his-histories))))
-   ((< his-index 0)
-    (setq his-index 0))))
+   ((>= history-index (length history-histories))
+    (setq history-index (1- (length history-histories))))
+   ((< history-index 0)
+    (setq history-index 0))))
 
-(defun his-use-current-history ()
-  (when (> (length his-histories) 0)
-    (let* ((history (nth his-index his-histories))
+(defun history-use-current-history ()
+  (when (> (length history-histories) 0)
+    (let* ((history (nth history-index history-histories))
            (marker (plist-get history :marker))
            (buffer (marker-buffer marker))
            (pos (marker-position marker)))
@@ -192,106 +195,106 @@
       ;; Update point.
       (goto-char pos))))
 
-(defun his-undefined ()
+(defun history-undefined ()
   "Empty command for keymap binding."
   (interactive))
 
-(defun his-preview-prev-history ()
+(defun history-preview-prev-history ()
   (interactive)
   (when (minibufferp)
     (delete-minibuffer-contents)
-    (setq his-index (1+ his-index))
-    (and (>= his-index (length his-histories))
-         (setq his-index (1- (length his-histories))))
-    (insert (his-histories-string))
+    (setq history-index (1+ history-index))
+    (and (>= history-index (length history-histories))
+         (setq history-index (1- (length history-histories))))
+    (insert (history-histories-string))
     (re-search-backward "\*")
     ;; Use history and re-select minibuffer.
-    (his-use-current-history)
+    (history-use-current-history)
     (select-window (active-minibuffer-window))))
 
-(defun his-preview-next-history ()
+(defun history-preview-next-history ()
   (interactive)
   (when (minibufferp)
     (delete-minibuffer-contents)
-    (setq his-index (1- his-index))
-    (and (< his-index 0)
-         (setq his-index 0))
-    (insert (his-histories-string))
+    (setq history-index (1- history-index))
+    (and (< history-index 0)
+         (setq history-index 0))
+    (insert (history-histories-string))
     (re-search-backward "\*")
     ;; Use history and re-select minibuffer.
-    (his-use-current-history)
+    (history-use-current-history)
     (select-window (active-minibuffer-window))))
 
-(defun his-preview-goto-history ()
+(defun history-preview-goto-history ()
   (interactive)
   (when (minibufferp)
-    (setq-default his-index his-index)
+    (setq-default history-index history-index)
     (throw 'exit t)))
 
-(defun his-histories-string ()
+(defun history-histories-string ()
   "Histories list string."
-  (let* ((total (length his-histories))
+  (let* ((total (length history-histories))
          (prompt (propertize (format "History %d/%d: "
-                                     (- total his-index) total)
-                             'face 'his-prompt))
+                                     (- total history-index) total)
+                             'face 'history-prompt))
          value)
     (loop for i from 0 below total do
           (setq value (concat value
-                              (if (= i (- total 1 his-index))
+                              (if (= i (- total 1 history-index))
                                   (propertize "*"
-                                              'face 'his-current-history)
+                                              'face 'history-current-history)
                                 (propertize "."
-                                            ' face 'his-other-history)))))
+                                            ' face 'history-other-history)))))
     (concat prompt value)))
 
-(defun his-menu-enable? ()
+(defun history-menu-enable? ()
   (catch 'ignore
-    (dolist (ignore his-ignore-buffer-names)
+    (dolist (ignore history-ignore-buffer-names)
       (when (string-match ignore (buffer-name))
         (throw 'ignore nil)))
-    (> (length his-histories) 0)))
+    (> (length history-histories) 0)))
 
-(defun his-add-menu-items ()
+(defun history-add-menu-items ()
   "Add menu and tool-bar buttons."
   ;; Menu items.
   (define-key-after global-map [menu-bar edit history-group]
     (cons "History" (make-sparse-keymap))
     'separator-search)
   (define-key-after global-map [menu-bar edit history-group set-history]
-    '(menu-item "Add History" his-add-history))
+    '(menu-item "Add History" history-add-history))
   (define-key-after (default-value 'global-map) [menu-bar edit history-group previous-history]
-    '(menu-item "Previous History" his-prev-history
-		:enable (his-menu-enable?)))
+    '(menu-item "Previous History" history-prev-history
+		:enable (history-menu-enable?)))
   (define-key-after (default-value 'global-map) [menu-bar edit history-group next-history]
-    '(menu-item "Next History" his-next-history
-		:enable (his-menu-enable?)))
+    '(menu-item "Next History" history-next-history
+		:enable (history-menu-enable?)))
   (define-key-after global-map [menu-bar edit history-group show-history]
-    '(menu-item "List History" his-show-history
+    '(menu-item "List History" history-show-history
 		:help "List history in a buffer"))
   (define-key-after global-map [menu-bar edit history-group discard-history]
-    '(menu-item "Kill All History" his-kill-histories
-		:enable (his-menu-enable?)))
+    '(menu-item "Kill All History" history-kill-histories
+		:enable (history-menu-enable?)))
   ;; Tool-bar buttons.
   (when tool-bar-mode
     (define-key-after tool-bar-map [separator-history]
       '("--")
       'paste)
     (define-key-after tool-bar-map [add-history]
-      '(menu-item "Add History" his-add-history
+      '(menu-item "Add History" history-add-history
                   :image (find-image '((:type xpm :file "images/add-history.xpm"))))
       'separator-history)
     (define-key-after tool-bar-map [previous-history]
-      '(menu-item "Previous History" his-prev-history
+      '(menu-item "Previous History" history-prev-history
                   :image (find-image '((:type xpm :file "images/prev-history.xpm")))
-                  :enable (his-menu-enable?))
+                  :enable (history-menu-enable?))
       'add-history)
     (define-key-after tool-bar-map [next-history]
-      '(menu-item "Next History" his-next-history
+      '(menu-item "Next History" history-next-history
                   :image (find-image '((:type xpm :file "images/next-history.xpm")))
-                  :enable (his-menu-enable?))
+                  :enable (history-menu-enable?))
       'previous-history)))
 
-(defun remove-menu-items ()
+(defun history-remove-menu-items ()
   "Remove menu and tool-bar buttons."
   ;; Menu items.
   (define-key global-map [menu-bar edit history-group] nil)
@@ -306,14 +309,14 @@
 ;; Public Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;###autoload
-(defun his-add-history (&optional is-thing?)
+(defun history-add-history (&optional is-thing?)
   "Add current position into the database, which is `global-mark-ring'. If 
 IS-THING? is t, it will cache the symbol string at point (if any) and use it as 
 a comparison in checking algorithm when navigating to it. If they are not matched, 
 the history will be deleted immediately."
   (interactive)
   (catch 'ignore
-    (dolist (ignore his-ignore-buffer-names)
+    (dolist (ignore history-ignore-buffer-names)
       (when (string-match ignore (buffer-name))
         (throw 'ignore nil)))
     (let (history
@@ -324,35 +327,35 @@ the history will be deleted immediately."
       (and is-thing? thing
            (setq history (plist-put history :symbol thing)))
       ;; Add to databse.
-      (his-add-history-internal history))))
+      (history-add-history-internal history))))
 
 ;;;###autoload
-(defun his-show-history ()
+(defun history-show-history ()
   "Show histories in a pretty way."
   (interactive)
-  (his-remove-invalid-history)
-  (message (his-histories-string)))
+  (history-remove-invalid-history)
+  (message (history-histories-string)))
 
 ;;;###autoload
-(defun his-goto-history ()
+(defun history-goto-history ()
   (interactive)
-  (when (> (length his-histories) 0)
+  (when (> (length history-histories) 0)
     (minibuffer-with-setup-hook
       (lambda ()
         ;; Make index a buffer local variable so that user can return to
         ;; original status.
-        (setq-local his-index his-index)
+        (setq-local history-index history-index)
         ;; Change minibuffer's local map.
         (use-local-map (let ((map (make-sparse-keymap)))
-                         (define-key map [remap self-insert-command] 'his-undefined)
-                         (define-key map (kbd "<up>") 'his-undefined)
-                         (define-key map (kbd "<down>") 'his-undefined)
-                         (define-key map (kbd "<left>") 'his-preview-prev-history)
-                         (define-key map (kbd "<right>") 'his-preview-next-history)
+                         (define-key map [remap self-insert-command] 'history-undefined)
+                         (define-key map (kbd "<up>") 'history-undefined)
+                         (define-key map (kbd "<down>") 'history-undefined)
+                         (define-key map (kbd "<left>") 'history-preview-prev-history)
+                         (define-key map (kbd "<right>") 'history-preview-next-history)
                          (define-key map (kbd "<escape>") 'exit-minibuffer)
-                         (define-key map (kbd "<return>") 'his-preview-goto-history)
+                         (define-key map (kbd "<return>") 'history-preview-goto-history)
                          map)))
-      (let* ((str (his-histories-string))
+      (let* ((str (history-histories-string))
              (index (1+ (string-match "\*" str)))
              (buffer (current-buffer))
              (pos (point)))
@@ -360,55 +363,55 @@ the history will be deleted immediately."
               (read-from-minibuffer "" (cons str index))
               nil)
             ;; Use history.
-            (his-use-current-history)
+            (history-use-current-history)
           ;; Not to use history.
           (switch-to-buffer buffer)
           (goto-char pos))))))
 
 ;;;###autoload
-(defun his-kill-histories ()
+(defun history-kill-histories ()
   "Discard all the histories."
   (interactive)
-  (setq his-index 0
-        his-histories nil))
+  (setq history-index 0
+        history-histories nil))
 
 ;;;###autoload
-(defun his-prev-history ()
+(defun history-prev-history ()
   "Navigate to previous history."
   (interactive)
-  (when his-histories
-    (his-remove-invalid-history)
-    (let* ((history (nth his-index his-histories))
+  (when history-histories
+    (history-remove-invalid-history)
+    (let* ((history (nth history-index history-histories))
 	   (marker (plist-get history :marker))
            (buffer (marker-buffer marker))
            (pos (marker-position marker)))
       ;; If point is far away from current history, use current history.
       ;; If point is close from current history, use next/previous history.
       (when (and (eq buffer (current-buffer))
-                 (his-same-line? (point) pos))
-        (his-move-history 1)))
+                 (history-same-line? (point) pos))
+        (history-move-history 1)))
     ;; Use history.
-    (his-use-current-history))
-  (his-show-history))
+    (history-use-current-history))
+  (history-show-history))
 
 ;;;###autoload
-(defun his-next-history ()
+(defun history-next-history ()
   "Navigate to next history."
   (interactive)
-  (when his-histories
-    (his-remove-invalid-history)
-    (let* ((history (nth his-index his-histories))
+  (when history-histories
+    (history-remove-invalid-history)
+    (let* ((history (nth history-index history-histories))
 	   (marker (plist-get history :marker))
            (buffer (marker-buffer marker))
            (pos (marker-position marker)))
       ;; If point is far away from current history, use current history.
       ;; If point is close from current history, use next/previous history.
       (when (and (eq buffer (current-buffer))
-                 (his-same-line? (point) pos))
-        (his-move-history -1)))
+                 (history-same-line? (point) pos))
+        (history-move-history -1)))
     ;; Use history.
-    (his-use-current-history))
-  (his-show-history))
+    (history-use-current-history))
+  (history-show-history))
 
 ;;;###autoload
 (define-minor-mode history-mode
@@ -416,8 +419,8 @@ the history will be deleted immediately."
   :lighter " history"
   :global t
   (if history-mode
-      (his-add-menu-items)
-    (remove-menu-items)))
+      (history-add-menu-items)
+    (history-remove-menu-items)))
 
 (provide 'history)
 ;;; history.el ends here
