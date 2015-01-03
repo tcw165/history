@@ -3,14 +3,15 @@
 history.el - History utility for source code navigation
 =======================================================
 
-This tool is similar to `pop-mark` or `pop-global-mark` but more powerful.
-You can go through the whole history without losing them. More specific,
-`pop-global-mark` will use the latest record but also discard it. But this
-tool will preserve all the history. The tool will smartly ignored killed
-buffers or invalid symbol string.
+This tool is similar to `pop-global-mark` but more powerful.
+You can go through the whole history without losing them. More specific, `pop-global-mark` will use the latest record but also discard it. But this tool will preserve all the history and smartly ignored killed buffers or invalid symbol string.
 
-Basic Concept:
---------------
+Demo
+----
+![history screenshot](demo/all.gif "history demo")
+
+Basic Concept
+-------------
 * Normal history database:
 
   (1) - (2) - (3) - (4) - `(5)`
@@ -25,9 +26,12 @@ Basic Concept:
 > history behind index will be discard, and new one will be appended to the
 database
 
-Usage:
-------
+Usage
+-----
 `M-x history-mode` Add menu items and tool-bar items of history utility.
+
+![history screenshot](demo/menu.png "history demo")
+![history screenshot](demo/toolbar.png "history demo")
 
 `(his-add-history)` Save current point and buffer as a history into the database.
 
@@ -39,10 +43,12 @@ Usage:
 
 `M-x his-kill-histories` Discard whole history database.
 
-Customization:
---------------
+Customization
+-------------
 `his-history-max` The maximum length of the history database.
 
 `his-ignore-buffer-names` A REGEXP list to ignore specific buffers.
 
-
+Contribution
+------------
+Forks and pull requests are welcome!
