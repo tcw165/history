@@ -1,11 +1,10 @@
-;;; history.el --- History utility for source code navigation.
+;;; history.el --- History utility for source code navigation
 ;;
 ;; Copyright (C) 2014
 ;;
 ;; Author: boyw165
-;; Version: 20150103.1300
-;; Package-Requires: ((emacs "24.3"))
-;; Compatibility: GNU Emacs 24.3+
+;; URL: https://github.com/boyw165/history
+;; Package-Requires: ((emacs "24.3") (cl-lib "0.5"))
 ;;
 ;; This file is NOT part of GNU Emacs.
 ;;
@@ -40,9 +39,8 @@
 ;;                ^ index
 ;; * Add a new history into the database:
 ;;   (1) - (2) - (3) - (6)
-;;                      ^ index
-;; (history behind index will be discard, and new one will be appended to the
-;;  database)
+;;                      ^ index, histories behind index will be discard, and new
+;;                        one will be appended to the end.
 ;;
 ;; Usage:
 ;; ------
