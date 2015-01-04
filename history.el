@@ -29,8 +29,8 @@
 ;; will use the latest record but also discard it. But this tool will preserve
 ;; all the history and smartly ignored killed buffers or invalid symbol string.
 ;;
-;; You'll feel the power and convenience of using `his-add-history', 
-;; `his-prev-history' and `his-next-history' instead of built-in old way.
+;; You'll feel the power and convenience of using `history-add-history', 
+;; `history-prev-history' and `history-next-history' instead of built-in old way.
 ;;
 ;; Basic Concept:
 ;; --------------
@@ -94,7 +94,8 @@
 (eval-when-compile (require 'cl))
 
 (defgroup history nil
-  "A lightweight history utility.")
+  "A lightweight history utility."
+  :group 'convenience)
 
 (defgroup history-face nil
   "Face of history."
@@ -127,9 +128,11 @@
 
 (defvar history-histories nil
   "The history database. see `history-add-history' for details.")
+(make-variable-frame-local 'history-histories)
 
 (defvar history-index 0
   "The index of current history in the database.")
+(make-variable-frame-local 'history-index)
 
 (defun history-same-line? (pos1 pos2)
   (let ((line-pos1 (save-excursion

@@ -1,3 +1,4 @@
+[![MELPA](http://melpa.org/packages/history-badge.svg)](http://melpa.org/#/history)
 [![TRAVIS-CI](https://travis-ci.org/boyw165/history.svg?branch=master)](https://travis-ci.org/boyw165/history)
 
 history.el - History utility for source code navigation
@@ -6,7 +7,7 @@ history.el - History utility for source code navigation
 This tool is similar to `pop-global-mark` but more powerful.
 You can go through the whole history without losing them. Actually, `pop-global-mark` will use the latest record but also discard it. But this tool will preserve all the history and smartly ignored killed buffers or invalid symbol string.
 
-You'll feel the power and convenience of using `his-add-history`, `his-prev-history` and `his-next-history` instead of built-in old way.
+You'll feel the power and convenience of using `history-add-history`, `history-prev-history` and `history-next-history` instead of built-in old way.
 
 Demo
 ----
@@ -42,21 +43,21 @@ Usage
 ![history screenshot](demo/menu.png "history demo")
 ![history screenshot](demo/toolbar.png "history demo")
 
-* `(his-add-history)` Save current point and buffer as a history into the database.
+* `(history-add-history)` Save current point and buffer as a history into the database.
 
-* `(his-add-history t)` Like above, but also save symbol string at point. When navigating to the history, the tool compare the matched string so that it make sure the history is VALID.
+* `(history-add-history t)` Like above, but also save symbol string at point. When navigating to the history, the tool compare the matched string so that it make sure the history is VALID.
 
-* `M-x his-prev-history` Goto previous history.
+* `M-x history-prev-history` Goto previous history.
 
-* `M-x his-next-history` Goto new history.
+* `M-x history-next-history` Goto new history.
 
-* `M-x his-kill-histories` Discard whole history database.
+* `M-x history-kill-histories` Discard whole history database.
 
 Customization
 -------------
-* `his-history-max` The maximum length of the history database.
+* `history-history-max` The maximum length of the history database.
 
-* `his-ignore-buffer-names` A REGEXP list to ignore specific buffers.
+* `history-ignore-buffer-names` A REGEXP list to ignore specific buffers.
 
 Contribution
 ------------
