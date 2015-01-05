@@ -40,8 +40,8 @@ Usage
 -----
 * `M-x history-mode` Add menu items and tool-bar items of history utility.
 
-![history screenshot](demo/menu.png "history demo")
-![history screenshot](demo/toolbar.png "history demo")
+![history screenshot](demo/menu.png "history menu")
+![history screenshot](demo/toolbar.png "history tool-bar")
 
 * `(history-add-history)` Save current point and buffer as a history into the database.
 
@@ -53,11 +53,19 @@ Usage
 
 * `M-x history-kill-histories` Discard whole history database.
 
+* `M-x history-goto-history` Enter history preview mode. `ENTER` to confirm to use the selected history. `ESC` to cancel preview and restore everything.
+
+![history screenshot](demo/history-goto-history.gif "goto history interactively")
+
 Customization
 -------------
 * `history-history-max` The maximum length of the history database.
 
 * `history-ignore-buffer-names` A REGEXP list to ignore specific buffers.
+
+* `history-window-local-history` to toggle using window-local or global history. Window-local history means every window has its independent history database.
+
+![history screenshot](demo/window-local-history.png "history tool-bar")
 
 Contribution
 ------------

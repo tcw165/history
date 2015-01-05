@@ -74,7 +74,8 @@
 ;;
 ;; TODO:
 ;; -----
-;; n/a
+;; * Fix index bug in `history-goto-history'.
+;; * Add tool-bar for `history-goto-history'.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -82,6 +83,7 @@
 ;;
 ;; 2015-01-06
 ;; * Support `history-window-local-history' to make history local to window.
+;; * Add `history-goto-history' menu.
 ;;
 ;; 2014-12-28
 ;; * Support `history-ignore-buffer-names' to ignore some buffer with specific
@@ -144,6 +146,9 @@ to use window-local history; nil means to use a global history."
 (defvar history-index 0
   "The index of current history in the database.")
 
+(defvar history-window nil
+  "The cached window for `history-goto-history' usage.")
+
 (defun history-same-line? (pos1 pos2)
   (let ((line-pos1 (save-excursion
                      (goto-char pos1)
@@ -155,6 +160,13 @@ to use window-local history; nil means to use a global history."
                      (point))))
     (= line-pos1 line-pos2)))
 
+(defun history-window ()
+  "Return `history-window' if minibuffer is active; `selected-window' if 
+inactive."
+  (if (active-minibuffer-window)
+      history-window
+    (selected-window)))
+
 (defun history-stack ()
   (if history-window-local-history
       (window-parameter nil 'history-stack)
@@ -165,20 +177,23 @@ to use window-local history; nil means to use a global history."
       (window-parameter nil 'history-index)
     history-index))
 
-(defmacro history-with-stack (&rest body)
+(defmacro history-do (&rest body)
   "Convenient macro to access `history-stack' and `history-index' without caring
 whether `history-window-local-history' is true or false."
   (declare (indent 0) (debug t))
-  `(let (global-stack global-index)
+  `(let (global-stack
+         global-index)
      (let ((history-stack (history-stack))
            (history-index (history-index)))
        ;; Evaluate BODY~
        (prog1 (progn ,@body)
          ;; Final save!!!
          (if history-window-local-history
+             ;; Window-local history ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
              (progn
                (set-window-parameter nil 'history-stack history-stack)
                (set-window-parameter nil 'history-index history-index))
+           ;; Global history ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
            (setq global-stack history-stack
                  global-index history-index))))
      (and global-index
@@ -233,10 +248,11 @@ whether `history-window-local-history' is true or false."
          (marker (plist-get history :marker))
          (buffer (marker-buffer marker))
          (pos (marker-position marker)))
-    ;; Switch to buffer.
-    (switch-to-buffer buffer)
-    ;; Update point.
-    (goto-char pos)))
+    (with-selected-window (history-window)
+      ;; Switch to buffer.
+      (set-window-buffer (selected-window) buffer)
+      ;; Update point.
+      (goto-char pos))))
 
 (defun history-undefined ()
   "Empty command for keymap binding."
@@ -245,35 +261,32 @@ whether `history-window-local-history' is true or false."
 (defun history-preview-prev-history ()
   (interactive)
   (when (minibufferp)
-    (history-with-stack
-      (delete-minibuffer-contents)
-      (setq history-index (1+ history-index))
-      (and (>= history-index (length history-stack))
-           (setq history-index (1- (length history-stack))))
-      (insert (history-histories-string))
-      (re-search-backward "\*")
-      ;; Use history and re-select minibuffer.
-      (history-use-current-history)
-      (select-window (active-minibuffer-window)))))
+    (delete-minibuffer-contents)
+    (setq history-index (1+ history-index))
+    (and (>= history-index (length history-stack))
+         (setq history-index (1- (length history-stack))))
+    (insert (history-histories-string))
+    (re-search-backward "\*")
+    ;; Use history and re-select minibuffer.
+    (history-use-current-history)
+    (select-window (active-minibuffer-window))))
 
 (defun history-preview-next-history ()
   (interactive)
   (when (minibufferp)
-    (history-with-stack
-      (delete-minibuffer-contents)
-      (setq history-index (1- history-index))
-      (and (< history-index 0)
-           (setq history-index 0))
-      (insert (history-histories-string))
-      (re-search-backward "\*")
-      ;; Use history and re-select minibuffer.
-      (history-use-current-history)
-      (select-window (active-minibuffer-window)))))
+    (delete-minibuffer-contents)
+    (setq history-index (1- history-index))
+    (and (< history-index 0)
+         (setq history-index 0))
+    (insert (history-histories-string))
+    (re-search-backward "\*")
+    ;; Use history and re-select minibuffer.
+    (history-use-current-history)
+    (select-window (active-minibuffer-window))))
 
 (defun history-preview-goto-history ()
   (interactive)
   (when (minibufferp)
-    (setq-default history-index history-index)
     (throw 'exit t)))
 
 (defun history-histories-string ()
@@ -370,7 +383,7 @@ SAVE-THING? is t, it will cache the symbol string at point (if any) and use it a
 a comparison in checking algorithm when navigating to it. If they are not matched, 
 the history will be deleted immediately."
   (interactive '(t))
-  (history-with-stack
+  (history-do
     (catch 'ignore
       (dolist (ignore history-ignore-buffer-names)
         (when (string-match ignore (buffer-name))
@@ -391,47 +404,54 @@ the history will be deleted immediately."
 (defun history-show-history ()
   "Show histories in a pretty way."
   (interactive)
-  (history-with-stack
+  (history-do
     (history-remove-invalid-history)
     (message (history-histories-string))))
 
 ;;;###autoload
 (defun history-goto-history ()
   (interactive)
-  (when (> (length history-stack) 0)
-    (minibuffer-with-setup-hook
-      (lambda ()
-        ;; Make index a buffer local variable so that user can return to
-        ;; original status.
-        (setq-local history-index history-index)
-        ;; Change minibuffer's local map.
-        (use-local-map (let ((map (make-sparse-keymap)))
-                         (define-key map [remap self-insert-command] 'history-undefined)
-                         (define-key map (kbd "<up>") 'history-undefined)
-                         (define-key map (kbd "<down>") 'history-undefined)
-                         (define-key map (kbd "<left>") 'history-preview-prev-history)
-                         (define-key map (kbd "<right>") 'history-preview-next-history)
-                         (define-key map (kbd "<escape>") 'exit-minibuffer)
-                         (define-key map (kbd "<return>") 'history-preview-goto-history)
-                         map)))
-      (let* ((str (history-histories-string))
-             (index (1+ (string-match "\*" str)))
-             (buffer (current-buffer))
-             (pos (point)))
-        (if (catch 'exit
-              (read-from-minibuffer "" (cons str index))
-              nil)
-            ;; Use history.
-            (history-use-current-history)
-          ;; Not to use history.
-          (switch-to-buffer buffer)
-          (goto-char pos))))))
+  (history-do
+    (when history-stack
+      (minibuffer-with-setup-hook
+          (lambda ()
+            ;; Change minibuffer's local map.
+            (use-local-map (let ((map (make-sparse-keymap)))
+                             (define-key map [remap self-insert-command] 'history-undefined)
+                             (define-key map (kbd "<up>") 'history-undefined)
+                             (define-key map (kbd "<down>") 'history-undefined)
+                             (define-key map (kbd "<left>") 'history-preview-prev-history)
+                             (define-key map (kbd "<right>") 'history-preview-next-history)
+                             (define-key map (kbd "<escape>") 'exit-minibuffer)
+                             (define-key map (kbd "<return>") 'history-preview-goto-history)
+                             map)))
+        (let* ((cached-history-index history-index)
+               (history-window (selected-window))
+               (str (history-histories-string))
+               (index (1+ (string-match "\*" str)))
+               (buffer (current-buffer))
+               (pos (point)))
+          (if (catch 'exit
+                ;; Show index history.
+                (history-use-current-history)
+                ;; Activate minibuffer.
+                (read-from-minibuffer "" (cons str index))
+                ;; Normally return nil; but ...
+                ;; If `history-preview-goto-history' is called, return t.
+                nil)
+              ;; Use history.
+              (history-use-current-history)
+            ;; Not to use history, revert buffer and point to original status.
+            (setq history-index cached-history-index)
+            (with-selected-window (history-window)
+              (set-window-buffer (selected-window) buffer)
+              (goto-char pos))))))))
 
 ;;;###autoload
 (defun history-kill-histories ()
   "Discard all the histories."
   (interactive)
-  (history-with-stack
+  (history-do
     (setq history-stack nil
           history-index 0)))
 
@@ -439,8 +459,8 @@ the history will be deleted immediately."
 (defun history-prev-history ()
   "Navigate to previous history."
   (interactive)
-  (history-with-stack
-    (when (history-enable?)
+  (history-do
+    (when history-stack
       (history-remove-invalid-history)
       (let* ((history (nth history-index history-stack))
              (marker (plist-get history :marker))
@@ -459,8 +479,8 @@ the history will be deleted immediately."
 (defun history-next-history ()
   "Navigate to next history."
   (interactive)
-  (history-with-stack
-    (when (history-enable?)
+  (history-do
+    (when history-stack
       (history-remove-invalid-history)
       (let* ((history (nth history-index history-stack))
              (marker (plist-get history :marker))
