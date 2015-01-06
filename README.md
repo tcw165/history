@@ -1,8 +1,8 @@
 [![MELPA](http://melpa.org/packages/history-badge.svg)](http://melpa.org/#/history)
 [![TRAVIS-CI](https://travis-ci.org/boyw165/history.svg?branch=master)](https://travis-ci.org/boyw165/history)
 
-history.el - History utility for source code navigation
-=======================================================
+history.el - History Utility For Code Navigation
+================================================
 
 This tool is similar to `pop-global-mark` but more powerful.
 You can go through the whole history without losing them. Actually, `pop-global-mark` will use the latest record but also discard it. But this tool will preserve all the history and smartly ignore killed buffers or invalid symbol string.
@@ -13,8 +13,8 @@ Demo
 ----
 ![history screenshot](demo/all.gif "history demo")
 
-Basic Concept
--------------
+Basic Concept - Linked List Liked
+---------------------------------
 * Normal history database:
 
 ```
@@ -64,7 +64,7 @@ Customization
 
 * `history-ignore-buffer-names` A REGEXP list to ignore specific buffers.
 
-* `history-window-local-history` to toggle using window-local or global history. Window-local history means every window has its independent history database.
+* `history-window-local-history` to toggle using **window-local** or **global** history. __Window-local history means every window has its independent history database.__
 
 ![history screenshot](demo/window-local-history.png "history tool-bar")
 
