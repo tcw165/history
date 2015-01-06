@@ -3,7 +3,7 @@
 ;; Copyright (C) 2014
 ;;
 ;; Author: boyw165
-;; Version: 20141206.1100
+;; Version: 20141206.1800
 ;; URL: https://github.com/boyw165/history
 ;; Package-Requires: ((emacs "24.3") (cl-lib "0.5"))
 ;;
@@ -74,7 +74,7 @@
 ;;
 ;; TODO:
 ;; -----
-;; * Fix index bug in `history-goto-history'.
+;; n/a
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -240,53 +240,55 @@ whether `history-window-local-history' is true or false."
    ((>= history-index (length history-stack))
     (setq history-index (1- (length history-stack))))
    ((< history-index 0)
-    (setq history-index 0))))
+    (setq history-index 0))
+   (t history-index)))
 
 (defun history-use-current-history ()
   (let* ((history (nth history-index history-stack))
          (marker (plist-get history :marker))
          (buffer (marker-buffer marker))
          (pos (marker-position marker)))
-    (with-selected-window (history-window)
-      ;; Switch to buffer.
-      (set-window-buffer (selected-window) buffer)
-      ;; Update point.
-      (goto-char pos))))
+    ;; Switch to buffer.
+    (set-window-buffer (history-window) buffer)
+    (set-buffer buffer)
+    ;; Update point.
+    (goto-char pos)))
 
 (defun history-undefined ()
   "Empty command for keymap binding."
   (interactive))
 
 (defun history-preview-prev-history ()
+  "Keymap function for previewing previous history."
   (interactive)
-  (when (minibufferp)
-    (delete-minibuffer-contents)
-    (setq history-index (1+ history-index))
-    (and (>= history-index (length history-stack))
-         (setq history-index (1- (length history-stack))))
-    (insert (history-histories-string))
-    (re-search-backward "\*")
-    ;; Use history and re-select minibuffer.
-    (history-use-current-history)
-    (select-window (active-minibuffer-window))))
+  (delete-minibuffer-contents)
+  (setq history-index (1+ history-index))
+  (and (>= history-index (length history-stack))
+       (setq history-index (1- (length history-stack))))
+  (insert (history-histories-string))
+  (re-search-backward "\*")
+  ;; Use history.
+  (with-selected-window (history-window)
+    (history-use-current-history)))
 
 (defun history-preview-next-history ()
+  "Keymap function for previewing next history."
   (interactive)
-  (when (minibufferp)
-    (delete-minibuffer-contents)
-    (setq history-index (1- history-index))
-    (and (< history-index 0)
-         (setq history-index 0))
-    (insert (history-histories-string))
-    (re-search-backward "\*")
-    ;; Use history and re-select minibuffer.
-    (history-use-current-history)
-    (select-window (active-minibuffer-window))))
+  (delete-minibuffer-contents)
+  (setq history-index (1- history-index))
+  (and (< history-index 0)
+       (setq history-index 0))
+  (insert (history-histories-string))
+  (re-search-backward "\*")
+  ;; Use history.
+  (with-selected-window (history-window)
+    (history-use-current-history)))
 
-(defun history-preview-goto-history ()
+(defun history-preview-cancel-history ()
+  "Keymap function for canceling history."
   (interactive)
-  (when (minibufferp)
-    (throw 'exit t)))
+  (delete-minibuffer-contents)
+  (exit-minibuffer))
 
 (defun history-histories-string ()
   "Histories list string."
@@ -326,7 +328,8 @@ whether `history-window-local-history' is true or false."
     (define-key-after map [history-separator]
       '(menu-item "--single-line"))
     (define-key-after map [set-history]
-      '(menu-item "Add History" history-add-history))
+      '(menu-item "Add History" history-add-history
+                  :enable (not (minibufferp))))
     (define-key-after map [previous-history]
       '(menu-item "Previous History" history-prev-history
                   :enable (history-enable?)))
@@ -343,13 +346,14 @@ whether `history-window-local-history' is true or false."
                   :enable (history-enable?))))
   ;; Tool-bar buttons.
   (when tool-bar-mode
-    (define-key-after tool-bar-map [history-separator]
+    (define-key-after tool-bar-map [history-separator-1]
       '("--")
       'paste)
     (define-key-after tool-bar-map [add-history]
       '(menu-item "Add History" history-add-history
-                  :image (find-image '((:type xpm :file "images/add-history.xpm"))))
-      'history-separator)
+                  :image (find-image '((:type xpm :file "images/add-history.xpm")))
+                  :enable (not (minibufferp)))
+      'history-separator-1)
     (define-key-after tool-bar-map [previous-history]
       '(menu-item "Previous History" history-prev-history
                   :image (find-image '((:type xpm :file "images/prev-history.xpm")))
@@ -364,7 +368,10 @@ whether `history-window-local-history' is true or false."
       '(menu-item "Goto History" history-goto-history
                   :image (find-image '((:type xpm :file "images/goto-history.xpm")))
                   :enable (history-enable?))
-      'next-history)))
+      'next-history)
+    (define-key-after tool-bar-map [history-separator-2]
+      '("--")
+      'goto-history)))
 
 (defun history-remove-menu-items ()
   "Remove menu and tool-bar buttons."
@@ -372,11 +379,12 @@ whether `history-window-local-history' is true or false."
   (define-key global-map [menu-bar edit history-group] nil)
   ;; Tool-bar buttons.
   (when tool-bar-mode
-    (define-key tool-bar-map [history-separator] nil)
+    (define-key tool-bar-map [history-separator-1] nil)
     (define-key tool-bar-map [add-history] nil)
     (define-key tool-bar-map [previous-history] nil)
     (define-key tool-bar-map [next-history] nil)
-    (define-key tool-bar-map [goto-history] nil)))
+    (define-key tool-bar-map [goto-history] nil)
+    (define-key tool-bar-map [history-separator-2] nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -418,39 +426,34 @@ the history will be deleted immediately."
   (interactive)
   (history-do
     (when history-stack
-      (minibuffer-with-setup-hook
-          (lambda ()
-            ;; Change minibuffer's local map.
-            (use-local-map (let ((map (make-sparse-keymap)))
-                             (define-key map [remap self-insert-command] 'history-undefined)
-                             (define-key map (kbd "<up>") 'history-undefined)
-                             (define-key map (kbd "<down>") 'history-undefined)
-                             (define-key map (kbd "<left>") 'history-preview-prev-history)
-                             (define-key map (kbd "<right>") 'history-preview-next-history)
-                             (define-key map (kbd "<escape>") 'exit-minibuffer)
-                             (define-key map (kbd "<return>") 'history-preview-goto-history)
-                             map)))
-        (let* ((cached-history-index history-index)
-               (history-window (selected-window))
-               (str (history-histories-string))
-               (index (1+ (string-match "\*" str)))
-               (buffer (current-buffer))
-               (pos (point)))
-          (if (catch 'exit
-                ;; Show index history.
-                (history-use-current-history)
-                ;; Activate minibuffer.
-                (read-from-minibuffer "" (cons str index))
-                ;; Normally return nil; but ...
-                ;; If `history-preview-goto-history' is called, return t.
-                nil)
-              ;; Use history.
-              (history-use-current-history)
-            ;; Not to use history, revert buffer and point to original status.
-            (setq history-index cached-history-index)
-            (with-selected-window (history-window)
-              (set-window-buffer (selected-window) buffer)
-              (goto-char pos))))))))
+      (let* ((cached-history-index history-index)
+             (history-window (selected-window))
+             (str (history-histories-string))
+             (index (1+ (string-match "\*" str)))
+             (buffer (current-buffer))
+             (pos (point))
+             (map (let ((map (make-sparse-keymap)))
+                    (define-key map [remap self-insert-command] 'history-undefined)
+                    (define-key map (kbd "<up>") 'history-undefined)
+                    (define-key map (kbd "<down>") 'history-undefined)
+                    (define-key map (kbd "<left>") 'history-preview-prev-history)
+                    (define-key map (kbd "<right>") 'history-preview-next-history)
+                    (define-key map (kbd "<return>") 'exit-minibuffer)
+                    (define-key map (kbd "q") 'history-preview-cancel-history)
+                    (define-key map (kbd "<escape>") 'history-preview-cancel-history)
+                    map)))
+        (history-use-current-history)
+        (if (string= (read-from-minibuffer "" (cons str index) map) "")
+            (progn
+              ;; Not to use history, revert buffer and point to original status.
+              (setq history-index cached-history-index)
+              ;; Switch to buffer.
+              (set-window-buffer (history-window) buffer)
+              (set-buffer buffer)
+              ;; Update point.
+              (goto-char pos))
+          ;; Use history.
+          (history-use-current-history))))))
 
 ;;;###autoload
 (defun history-kill-histories ()
