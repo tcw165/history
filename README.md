@@ -5,7 +5,7 @@ history.el - History utility for source code navigation
 =======================================================
 
 This tool is similar to `pop-global-mark` but more powerful.
-You can go through the whole history without losing them. Actually, `pop-global-mark` will use the latest record but also discard it. But this tool will preserve all the history and smartly ignored killed buffers or invalid symbol string.
+You can go through the whole history without losing them. Actually, `pop-global-mark` will use the latest record but also discard it. But this tool will preserve all the history and smartly ignore killed buffers or invalid symbol string.
 
 You'll feel the power and convenience of using `history-add-history`, `history-prev-history` and `history-next-history` instead of built-in old way.
 
@@ -33,7 +33,8 @@ Basic Concept
 
 ```
   (1) - (2) - (3) - (6)
-                     ^ index, histories behind index will be discard, and new one will be appended to the end.
+                     ^ index, histories behind index will be discard,
+                       and new one will be appended to the end.
 ```
 
 Usage
@@ -45,7 +46,7 @@ Usage
 
 * `(history-add-history)` Save current point and buffer as a history into the database.
 
-* `(history-add-history t)` Like above, but also save symbol string at point. When navigating to the history, the tool compare the matched string so that it make sure the history is VALID.
+* `(history-add-history t)` Like above, but also save symbol string at point. When navigating to the history, the tool compare the matched string so that it makes sure the history is VALID.
 
 * `M-x history-prev-history` Goto previous history.
 
