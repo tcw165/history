@@ -3,7 +3,7 @@
 ;; Copyright (C) 2014
 ;;
 ;; Author: boyw165
-;; Version: 20141204.1100
+;; Version: 20141206.1100
 ;; URL: https://github.com/boyw165/history
 ;; Package-Requires: ((emacs "24.3") (cl-lib "0.5"))
 ;;
@@ -75,7 +75,6 @@
 ;; TODO:
 ;; -----
 ;; * Fix index bug in `history-goto-history'.
-;; * Add tool-bar for `history-goto-history'.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -360,7 +359,12 @@ whether `history-window-local-history' is true or false."
       '(menu-item "Next History" history-next-history
                   :image (find-image '((:type xpm :file "images/next-history.xpm")))
                   :enable (history-enable?))
-      'previous-history)))
+      'previous-history)
+    (define-key-after tool-bar-map [goto-history]
+      '(menu-item "Goto History" history-goto-history
+                  :image (find-image '((:type xpm :file "images/goto-history.xpm")))
+                  :enable (history-enable?))
+      'next-history)))
 
 (defun history-remove-menu-items ()
   "Remove menu and tool-bar buttons."
@@ -371,7 +375,8 @@ whether `history-window-local-history' is true or false."
     (define-key tool-bar-map [history-separator] nil)
     (define-key tool-bar-map [add-history] nil)
     (define-key tool-bar-map [previous-history] nil)
-    (define-key tool-bar-map [next-history] nil)))
+    (define-key tool-bar-map [next-history] nil)
+    (define-key tool-bar-map [goto-history] nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
