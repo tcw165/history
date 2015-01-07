@@ -64,9 +64,13 @@ Customization
 
 * `history-ignore-buffer-names` A REGEXP list to ignore specific buffers.
 
-* `history-window-local-history` to toggle using **window-local** or **global** history. __Window-local history means every window has its independent history database.__
+* `history-window-local-history` To toggle using **window-local** or **global** history. **Window-local history means every window has its independent history database.**
 
-![history screenshot](demo/window-local-history.png "history tool-bar")
+![history screenshot](demo/window-local-history.png "window-local history")
+
+* `history-switch-buffer-history` Whether to add history when switching buffer.
+
+![history screenshot](demo/switch-buffer-history.png "switch-buffer history")
 
 Contribution
 ------------

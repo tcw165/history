@@ -71,6 +71,8 @@
 ;; * `history-window-local-history'
 ;;   A boolean indicates the history is whether local to window or global to
 ;;   all buffers.
+;; * `history-switch-buffer-history'
+;;   A boolean indicates whether to add history when switching buffer.
 ;;
 ;; TODO:
 ;; -----
@@ -98,6 +100,7 @@
 ;; GNU Library.
 (require 'thingatpt)
 (require 'tool-bar)
+(require 'advice)
 (eval-when-compile (require 'cl))
 
 (defgroup history nil
@@ -136,7 +139,12 @@
 (defcustom history-window-local-history nil
   "In some cases, window-local history will give big convenience to us. t means 
 to use window-local history; nil means to use a global history."
-  :type '(repeat regexp)
+  :type 'boolean
+  :group 'history)
+
+(defcustom history-switch-buffer-history t
+  "Whether to add history when switching buffer."
+  :type 'boolean
   :group 'history)
 
 (defvar history-stack nil
@@ -160,15 +168,22 @@ to use window-local history; nil means to use a global history."
                      (point))))
     (= line-pos1 line-pos2)))
 
-(defun history-add? ()
+(defun history-add? (&optional thing)
   "Is ready to add history."
-  (when history-stack
-    (let* ((history (nth history-index history-stack))
-           (symbol (plist-get history :symbol))
-           (marker (plist-get history :marker))
-           (pos (marker-position marker)))
-      (not (and (history-same-line? (point) pos)
-                (equal thing symbol))))))
+  ;; Do nothing when Emacs initializing.
+  (unless load-file-name
+    (if history-stack
+        (let* ((history (nth history-index history-stack))
+               (marker (plist-get history :marker))
+               (pos (marker-position marker))
+               (symbol (plist-get history :symbol)))
+          (not (and (history-same-line? (point) pos)
+                    (cond
+                     (symbol
+                      (equal thing symbol))
+                     (t
+                      (= (point) pos))))))
+      t)))
 
 (defun history-window ()
   "Return `history-window' if minibuffer is active; `selected-window' if 
@@ -324,6 +339,9 @@ whether `history-window-local-history' is true or false."
     (define-key-after map [window-local-history]
       '(menu-item "Window Local History" history-toggle-window-local-history
                   :button (:toggle . history-window-local-history)))
+    (define-key-after map [switch-buffer-history]
+      '(menu-item "Switch Buffer History" history-toggle-switch-buffer-history
+                  :button (:toggle . history-switch-buffer-history)))
     (define-key-after map [history-separator]
       '(menu-item "--single-line"))
     (define-key-after map [set-history]
@@ -385,6 +403,15 @@ whether `history-window-local-history' is true or false."
     (define-key tool-bar-map [goto-history] nil)
     (define-key tool-bar-map [history-separator-2] nil)))
 
+(defadvice switch-to-buffer (around history-switch-to-buffer)
+  "Advise `switch-to-buffer' to add history before and after switching."
+  (if history-switch-buffer-history
+      (progn
+        (history-add-history)
+        ad-do-it
+        (history-add-history))
+    ad-do-it))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -408,7 +435,7 @@ the history will be deleted immediately."
         (and save-thing? thing
              (setq history (plist-put history :symbol thing)))
         ;; Add to databse but avoid duplicates.
-        (when (history-add?)
+        (when (history-add? thing)
           ;; Discard old histories.
           (and history-stack (> history-index 0)
                (let ((current (nthcdr history-index history-stack)))
@@ -524,13 +551,22 @@ See `history-window-local-history'."
                "enabled" "disabled")))
 
 ;;;###autoload
+(defun history-toggle-switch-buffer-history ()
+  "Toggle `history-switch-buffer-history'."
+  (interactive)
+  (setq history-switch-buffer-history (not history-switch-buffer-history)))
+
+;;;###autoload
 (define-minor-mode history-mode
   "Add menus, toolbar buttons and more."
   :lighter " history"
   :global t
   (if history-mode
-      (history-add-menu-items)
-    (history-remove-menu-items)))
+      (progn
+        (history-add-menu-items)
+        (ad-activate 'switch-to-buffer t))
+    (history-remove-menu-items)
+    (ad-deactivate 'switch-to-buffer)))
 
 (provide 'history)
 ;;; history.el ends here
