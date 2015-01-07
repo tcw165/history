@@ -149,6 +149,7 @@ to use window-local history; nil means to use a global history."
   "The cached window for `history-goto-history' usage.")
 
 (defun history-same-line? (pos1 pos2)
+  "Is POS2 and POS2 (must in the same buffer) at same line."
   (let ((line-pos1 (save-excursion
                      (goto-char pos1)
                      (beginning-of-line)
@@ -158,6 +159,16 @@ to use window-local history; nil means to use a global history."
                      (beginning-of-line)
                      (point))))
     (= line-pos1 line-pos2)))
+
+(defun history-add? ()
+  "Is ready to add history."
+  (when history-stack
+    (let* ((history (nth history-index history-stack))
+           (symbol (plist-get history :symbol))
+           (marker (plist-get history :marker))
+           (pos (marker-position marker)))
+      (not (and (history-same-line? (point) pos)
+                (equal thing symbol))))))
 
 (defun history-window ()
   "Return `history-window' if minibuffer is active; `selected-window' if 
@@ -198,18 +209,6 @@ whether `history-window-local-history' is true or false."
      (and global-index
           (setq history-stack global-stack
                 history-index global-index))))
-
-(defun history-add-history-internal (history)
-  ;; Discard old histories.
-  (and history-stack (> history-index 0)
-       (let ((current (nthcdr history-index history-stack)))
-         (setq history-stack (cdr current))))
-  ;; Add new history.
-  (push history history-stack)
-  (setq history-index 0)
-  ;; Keep total amount of history is less than `history-history-max'.
-  (and (> (length history-stack) history-history-max)
-       (setcdr (nthcdr (1- history-history-max) stack) nil)))
 
 (defun history-remove-invalid-history ()
   "Go through the histories and check each buffer's validness."
@@ -401,15 +400,25 @@ the history will be deleted immediately."
       (dolist (ignore history-ignore-buffer-names)
         (when (string-match ignore (buffer-name))
           (throw 'ignore nil)))
-      (let (history
-            (thing (thing-at-point 'symbol t)))
+      (let ((thing (thing-at-point 'symbol t))
+            history)
         ;; Create history.
         (setq history (plist-put history :marker (copy-marker (point) t)))
         ;; Cache the symbol string if necessary.
         (and save-thing? thing
              (setq history (plist-put history :symbol thing)))
-        ;; Add to databse.
-        (history-add-history-internal history))
+        ;; Add to databse but avoid duplicates.
+        (when (history-add?)
+          ;; Discard old histories.
+          (and history-stack (> history-index 0)
+               (let ((current (nthcdr history-index history-stack)))
+                 (setq history-stack (cdr current))))
+          ;; Add new history.
+          (push history history-stack)
+          (setq history-index 0)
+          ;; Keep total amount of history is less than `history-history-max'.
+          (and (> (length history-stack) history-history-max)
+               (setcdr (nthcdr (1- history-history-max) stack) nil))))
       (when (called-interactively-p)
         (message (history-histories-string))))))
 
