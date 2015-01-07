@@ -427,6 +427,7 @@ the history will be deleted immediately."
       (dolist (ignore history-ignore-buffer-names)
         (when (string-match ignore (buffer-name))
           (throw 'ignore nil)))
+      (history-remove-invalid-history)
       (let ((thing (thing-at-point 'symbol t))
             history)
         ;; Create history.
