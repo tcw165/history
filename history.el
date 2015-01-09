@@ -169,7 +169,7 @@ to use window-local history; nil means to use a global history."
     (= line-pos1 line-pos2)))
 
 (defun history-add? (&optional thing)
-  "Is ready to add history."
+  "Is it ready to add history."
   ;; Do nothing when Emacs initializing.
   (unless load-file-name
     (if history-stack
@@ -444,9 +444,9 @@ the history will be deleted immediately."
           ;; Add new history.
           (push history history-stack)
           (setq history-index 0)
-          ;; Keep total amount of history is less than `history-history-max'.
+          ;; Keep total amount of history less than `history-history-max'.
           (and (> (length history-stack) history-history-max)
-               (setcdr (nthcdr (1- history-history-max) stack) nil))))
+               (setcdr (nthcdr (1- history-history-max) history-stack) nil))))
       (when (called-interactively-p)
         (message (history-histories-string))))))
 
