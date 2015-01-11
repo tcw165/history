@@ -40,7 +40,7 @@ Basic Concept - Linked List Liked
 Usage - First Step, Enable `history-mode`
 -----------------------------------------
 
-![history screenshot](demo/menu.png "history menu")
+![history screenshot](demo/window-local-history.png "history menu")
 ![history screenshot](demo/toolbar.png "history tool-bar")
 
 * **`(history-add-history)`** Save current point and buffer as a history into the database.
@@ -71,9 +71,9 @@ Customization
 
 ![history screenshot](demo/window-local-history.png "window-local history")
 
-* `history-add-after-functions` and `history-add-after-functions`, a functions list to be **advised** to call `history-add-history`.
+* `history-advised-before-functions` and `history-advised-after-functions`, a functions list to be **advised** to call `history-add-history`.
 
-![history screenshot](demo/history-hooks.png "history hooks")
+![history screenshot](demo/history-advice.png "history hooks")
 
 Contribution
 ------------

@@ -64,7 +64,7 @@
 ;;
 ;; Advanced Usage
 ;; --------------
-;; * M-x `history-setup-hooks'
+;; * M-x `history-setup-advice'
 ;;   Add history for you automatically for specific functions!!!
 ;;
 ;; Customization
@@ -76,7 +76,7 @@
 ;; * `history-window-local-history'
 ;;   A boolean indicates the history is whether local to window or global to
 ;;   all buffers.
-;; * `history-add-after-functions' and `history-add-after-functions'
+;; * `history-advised-after-functions' and `history-advised-after-functions'
 ;;   A functions list to be advised to call `history-add-history'.
 ;;
 ;; TODO:
@@ -89,8 +89,8 @@
 ;;
 ;; 2015-01-10
 ;; * Support `history-window-local-history' to make history local to window.
-;; * Support `history-add-before-functions' and `history-add-after-functions'
-;;   hooks.
+;; * Support `history-advised-before-functions' and
+;;   `history-advised-after-functions'.
 ;; * Add `history-goto-history' menu.
 ;;
 ;; 2014-12-28
@@ -114,12 +114,12 @@
   "A lightweight history utility."
   :group 'convenience)
 
-(defgroup history-hook nil
-  "Face of history."
+(defgroup history-advice nil
+  "Advising functions for history."
   :group 'history)
 
 (defgroup history-face nil
-  "Face of history."
+  "Faces of history."
   :group 'history)
 
 (defface history-prompt
@@ -154,28 +154,28 @@ to use window-local history; nil means to use a global history."
   :group 'history)
 
 (defun history-set-advices (symbol value)
-  "Customization setter for `history-add-before-functions' and
-`history-add-after-functions'."
+  "Customization setter for `history-advised-before-functions' and
+`history-advised-after-functions'."
   (history-init-advices nil)
   (set symbol value)
   (history-init-advices t))
 
-(defcustom history-add-before-functions '(beginning-of-buffer
-                                          end-of-buffer)
+(defcustom history-advised-before-functions '(beginning-of-buffer
+                                              end-of-buffer)
   "Add history automaticaly before executing these functions'. 
 See `advice' feature."
   :type '(repeat function)
   :initialize 'custom-initialize-default
   :set 'history-set-advices
-  :group 'history-hook)
+  :group 'history-advice)
 
-(defcustom history-add-after-functions '()
+(defcustom history-advised-after-functions '()
   "Add history automaticaly after executing these functions'. 
 See `advice' feature."
   :type '(repeat function)
   :initialize 'custom-initialize-default
   :set 'history-set-advices
-  :group 'history-hook)
+  :group 'history-advice)
 
 (defvar history-stack nil
   "The history database. See `history-add-history' for details.")
@@ -355,27 +355,27 @@ whether `history-window-local-history' is true or false."
 
 (defun history-init-advices (activate?)
   "Advise functions to call `history-add-history'.
-See `history-add-before-functions'
-    `history-add-after-functions'."
+See `history-advised-before-functions'
+    `history-advised-after-functions'."
   ;; Before-advised.
   (mapc (lambda (func)
           (eval
            `(defadvice ,func (before history-add-history
                                      ,(if activate? 'activate 'disable))
               (history-add-history))))
-        history-add-before-functions)
+        history-advised-before-functions)
   ;; After-advised.
   (mapc (lambda (func)
           (eval
            `(defadvice ,func (after history-add-history
                                     ,(if activate? 'activate 'disable))
               (history-add-history))))
-        history-add-after-functions))
+        history-advised-after-functions))
 
-(defun history-setup-hooks ()
+(defun history-setup-advice ()
   "Menu command for setting hooks."
   (interactive)
-  (customize-group 'history-hook))
+  (customize-group 'history-advice))
 
 (defun history-enable? ()
   "Menu command for enabling/disabling menu item."
@@ -398,7 +398,7 @@ See `history-add-before-functions'
       '(menu-item "Window Local History" history-toggle-window-local-history
                   :button (:toggle . history-window-local-history)))
     (define-key-after map [setup-hook]
-      '(menu-item "Setup Hooks" history-setup-hooks))
+      '(menu-item "Setup Adviced Functions" history-setup-advice))
     (define-key-after map [history-separator-1]
       '(menu-item "--single-line"))
     (define-key-after map [add-history]
