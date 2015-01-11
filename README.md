@@ -59,7 +59,7 @@ Usage - First Step, Enable `history-mode`
 
 Advanced Usage
 --------------
-* `M-x` **`history-setup-hooks`** to add history for you automatically for specific functions!!!
+* `M-x` **`history-setup-hooks`** to add history automatically for you for specific functions!!!
 
 Customization
 -------------
