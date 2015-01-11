@@ -291,10 +291,13 @@ whether `history-window-local-history' is true or false."
   (let* ((history (nth history-index history-stack))
          (marker (plist-get history :marker))
          (buffer (marker-buffer marker))
-         (pos (marker-position marker)))
+         (pos (marker-position marker))
+         (wpos (plist-get history :window-start)))
     ;; Switch to buffer.
     (set-window-buffer (history-window) buffer)
     (set-buffer buffer)
+    ;; Update window-start.
+    (set-window-start nil wpos)
     ;; Update point.
     (goto-char pos)))
 
@@ -475,8 +478,9 @@ the history will be deleted immediately."
       (history-remove-invalid-history)
       (let ((thing (thing-at-point 'symbol t))
             history)
-        ;; Create history.
-        (setq history (plist-put history :marker (copy-marker (point) t)))
+        ;; Create history, including position and window-start.
+        (setq history (plist-put history :marker (copy-marker (point) t))
+              history (plist-put history :window-start (window-start)))
         ;; Cache the symbol string if necessary.
         (and save-thing? thing
              (setq history (plist-put history :symbol thing)))
