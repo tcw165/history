@@ -32,8 +32,8 @@
 ;; You'll feel the power and convenience of using `history-add-history', 
 ;; `history-prev-history' and `history-next-history' instead of built-in old way.
 ;;
-;; Basic Concept:
-;; --------------
+;; Basic Concept
+;; -------------
 ;; * Normal history database:
 ;;   (1) - (2) - (3) - (4) - (5)
 ;;                            ^ index
@@ -45,8 +45,8 @@
 ;;                      ^ index, histories behind index will be discard, and new
 ;;                        one will be appended to the end.
 ;;
-;; Usage:
-;; ------
+;; Usage
+;; -----
 ;; * M-x `history-mode'
 ;;   Add menu items and tool-bar items of history utility.
 ;; * (`history-add-history')
@@ -62,8 +62,13 @@
 ;; * M-x `history-kill-histories'
 ;;   Discard whole history database.
 ;;
-;; Customization:
+;; Advanced Usage
 ;; --------------
+;; * M-x `history-setup-hooks'
+;;   Add history for you automatically for specific functions!!!
+;;
+;; Customization
+;; -------------
 ;; * `history-history-max'
 ;;   The maximum length of the history database.
 ;; * `history-ignore-buffer-names'
@@ -71,8 +76,8 @@
 ;; * `history-window-local-history'
 ;;   A boolean indicates the history is whether local to window or global to
 ;;   all buffers.
-;; * `history-switch-buffer-history'
-;;   A boolean indicates whether to add history when switching buffer.
+;; * `history-add-after-functions' and `history-add-after-functions'
+;;   A functions list to be advised to call `history-add-history'.
 ;;
 ;; TODO:
 ;; -----
@@ -82,8 +87,10 @@
 ;;
 ;;; Change Log:
 ;;
-;; 2015-01-06
+;; 2015-01-10
 ;; * Support `history-window-local-history' to make history local to window.
+;; * Support `history-add-before-functions' and `history-add-after-functions'
+;;   hooks.
 ;; * Add `history-goto-history' menu.
 ;;
 ;; 2014-12-28
@@ -106,6 +113,10 @@
 (defgroup history nil
   "A lightweight history utility."
   :group 'convenience)
+
+(defgroup history-hook nil
+  "Face of history."
+  :group 'history)
 
 (defgroup history-face nil
   "Face of history."
@@ -142,10 +153,29 @@ to use window-local history; nil means to use a global history."
   :type 'boolean
   :group 'history)
 
-(defcustom history-switch-buffer-history t
-  "Whether to add history when switching buffer."
-  :type 'boolean
-  :group 'history)
+(defun history-set-advices (symbol value)
+  "Customization setter for `history-add-before-functions' and
+`history-add-after-functions'."
+  (history-init-advices nil)
+  (set symbol value)
+  (history-init-advices t))
+
+(defcustom history-add-before-functions '(beginning-of-buffer
+                                          end-of-buffer)
+  "Add history automaticaly before executing these functions'. 
+See `advice' feature."
+  :type '(repeat function)
+  :initialize 'custom-initialize-default
+  :set 'history-set-advices
+  :group 'history-hook)
+
+(defcustom history-add-after-functions '()
+  "Add history automaticaly after executing these functions'. 
+See `advice' feature."
+  :type '(repeat function)
+  :initialize 'custom-initialize-default
+  :set 'history-set-advices
+  :group 'history-hook)
 
 (defvar history-stack nil
   "The history database. See `history-add-history' for details.")
@@ -320,7 +350,32 @@ whether `history-window-local-history' is true or false."
                                             'face 'history-other-history)))))
     (concat prompt value)))
 
+(defun history-init-advices (activate?)
+  "Advise functions to call `history-add-history'.
+See `history-add-before-functions'
+    `history-add-after-functions'."
+  ;; Before-advised.
+  (mapc (lambda (func)
+          (eval
+           `(defadvice ,func (before history-add-history
+                                     ,(if activate? 'activate 'disable))
+              (history-add-history))))
+        history-add-before-functions)
+  ;; After-advised.
+  (mapc (lambda (func)
+          (eval
+           `(defadvice ,func (after history-add-history
+                                    ,(if activate? 'activate 'disable))
+              (history-add-history))))
+        history-add-after-functions))
+
+(defun history-setup-hooks ()
+  "Menu command for setting hooks."
+  (interactive)
+  (customize-group 'history-hook))
+
 (defun history-enable? ()
+  "Menu command for enabling/disabling menu item."
   (catch 'ignore
     (dolist (ignore history-ignore-buffer-names)
       (when (string-match ignore (buffer-name))
@@ -339,12 +394,11 @@ whether `history-window-local-history' is true or false."
     (define-key-after map [window-local-history]
       '(menu-item "Window Local History" history-toggle-window-local-history
                   :button (:toggle . history-window-local-history)))
-    (define-key-after map [switch-buffer-history]
-      '(menu-item "Switch Buffer History" history-toggle-switch-buffer-history
-                  :button (:toggle . history-switch-buffer-history)))
-    (define-key-after map [history-separator]
+    (define-key-after map [setup-hook]
+      '(menu-item "Setup Hooks" history-setup-hooks))
+    (define-key-after map [history-separator-1]
       '(menu-item "--single-line"))
-    (define-key-after map [set-history]
+    (define-key-after map [add-history]
       '(menu-item "Add History" history-add-history
                   :enable (not (minibufferp))))
     (define-key-after map [previous-history]
@@ -402,15 +456,6 @@ whether `history-window-local-history' is true or false."
     (define-key tool-bar-map [next-history] nil)
     (define-key tool-bar-map [goto-history] nil)
     (define-key tool-bar-map [history-separator-2] nil)))
-
-(defadvice switch-to-buffer (around history-switch-to-buffer)
-  "Advise `switch-to-buffer' to add history before and after switching."
-  (if history-switch-buffer-history
-      (progn
-        (history-add-history)
-        ad-do-it
-        (history-add-history))
-    ad-do-it))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -552,12 +597,6 @@ See `history-window-local-history'."
                "enabled" "disabled")))
 
 ;;;###autoload
-(defun history-toggle-switch-buffer-history ()
-  "Toggle `history-switch-buffer-history'."
-  (interactive)
-  (setq history-switch-buffer-history (not history-switch-buffer-history)))
-
-;;;###autoload
 (define-minor-mode history-mode
   "Add menus, toolbar buttons and more."
   :lighter " history"
@@ -565,9 +604,11 @@ See `history-window-local-history'."
   (if history-mode
       (progn
         (history-add-menu-items)
-        (ad-activate 'switch-to-buffer t))
+        ;; Enable advice.
+        (history-init-advices t))
     (history-remove-menu-items)
-    (ad-deactivate 'switch-to-buffer)))
+    ;; Disable advice.
+    (history-init-advices nil)))
 
 (provide 'history)
 ;;; history.el ends here

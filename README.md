@@ -37,26 +37,29 @@ Basic Concept - Linked List Liked
                        and new one will be appended to the end.
 ```
 
-Usage
------
-* `M-x history-mode` Add menu items and tool-bar items of history utility.
+Usage - First Step, Enable `history-mode`
+-----------------------------------------
 
 ![history screenshot](demo/menu.png "history menu")
 ![history screenshot](demo/toolbar.png "history tool-bar")
 
-* `(history-add-history)` Save current point and buffer as a history into the database.
+* **`(history-add-history)`** Save current point and buffer as a history into the database.
 
-* `(history-add-history t)` Like above, but also save symbol string at point. When navigating to the history, the tool compare the matched string so that it makes sure the history is VALID.
+* **`(history-add-history t)`** Like above, but also save symbol string at point. When navigating to the history, the tool compare the matched string so that it makes sure the history is VALID.
 
-* `M-x history-prev-history` Goto previous history.
+* `M-x` **`history-prev-history`** Goto previous history.
 
-* `M-x history-next-history` Goto new history.
+* `M-x` **`history-next-history`** Goto new history.
 
-* `M-x history-kill-histories` Discard whole history database.
+* `M-x` **`history-kill-histories`** Discard whole history database.
 
-* `M-x history-goto-history` Enter history preview mode. `ENTER` to confirm to use the selected history. `ESC` to cancel preview and restore everything.
+* `M-x` **`history-goto-history`** Enter history preview mode. `ENTER` to confirm to use the selected history. `ESC` to cancel preview and restore everything.
 
 ![history screenshot](demo/history-goto-history.gif "goto history interactively")
+
+Advanced Usage
+--------------
+* `M-x` **`history-setup-hooks`** to add history for you automatically for specific functions!!!
 
 Customization
 -------------
@@ -68,9 +71,9 @@ Customization
 
 ![history screenshot](demo/window-local-history.png "window-local history")
 
-* `history-switch-buffer-history` Whether to add history when switching buffer.
+* `history-add-after-functions` and `history-add-after-functions`, a functions list to be **advised** to call `history-add-history`.
 
-![history screenshot](demo/switch-buffer-history.png "switch-buffer history")
+![history screenshot](demo/history-hooks.png "history hooks")
 
 Contribution
 ------------
