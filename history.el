@@ -183,6 +183,9 @@ See `advice' feature."
 (defvar history-index 0
   "The index of current history in the database.")
 
+(defvar history-from-scratch? nil
+  "t to remove all history, like start from scratch.")
+
 (defvar history-window nil
   "The cached window for `history-goto-history' usage.")
 
@@ -279,10 +282,12 @@ whether `history-window-local-history' is true or false."
     (setq history-index (1- (length history-stack)))))
 
 (defun history-move-history (step)
-  (setq history-index (+ history-index step))
+  (setq history-index (+ history-index step)
+        history-from-scratch? nil)
   (cond
    ((>= history-index (length history-stack))
-    (setq history-index (1- (length history-stack))))
+    (setq history-index (1- (length history-stack))
+          history-from-scratch? t))
    ((< history-index 0)
     (setq history-index 0))
    (t history-index)))
@@ -487,9 +492,11 @@ the history will be deleted immediately."
         ;; Add to databse but avoid duplicates.
         (when (history-add? thing)
           ;; Discard old histories.
-          (and history-stack (>= history-index 1)
-               (let ((current (nthcdr history-index history-stack)))
-                 (setq history-stack (cdr current))))
+          (if history-from-scratch?
+              (setq history-stack nil)
+            (and history-stack (>= history-index 1)
+                 (let ((current (nthcdr history-index history-stack)))
+                   (setq history-stack (cdr current)))))
           ;; Add new history.
           (push history history-stack)
           (setq history-index 0)
