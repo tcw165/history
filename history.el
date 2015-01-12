@@ -202,21 +202,21 @@ See `advice' feature."
     (= line-pos1 line-pos2)))
 
 (defun history-add? (&optional thing)
-  "Is it ready to add history."
-  ;; Do nothing when Emacs initializing.
-  (unless load-file-name
-    (if history-stack
-        (let* ((history (nth history-index history-stack))
-               (marker (plist-get history :marker))
-               (pos (marker-position marker))
-               (symbol (plist-get history :symbol)))
-          (not (and (history-same-line? (point) pos)
-                    (cond
-                     (symbol
-                      (equal thing symbol))
-                     (t
-                      (= (point) pos))))))
-      t)))
+  "Check readiness to add history, like avoiding duplicates."
+  (if history-stack
+      (let* ((history (nth history-index history-stack))
+             (marker (plist-get history :marker))
+             (buffer (marker-buffer marker))
+             (pos (marker-position marker))
+             (symbol (plist-get history :symbol)))
+        (not (and (eq (current-buffer) buffer)
+                  (history-same-line? (point) pos)
+                  (cond
+                   (symbol
+                    (equal thing symbol))
+                   (t
+                    (= (point) pos))))))
+    t))
 
 (defun history-window ()
   "Return `history-window' if minibuffer is active; `selected-window' if 
