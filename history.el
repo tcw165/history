@@ -160,7 +160,9 @@ to use window-local history; nil means to use a global history."
   (set symbol value)
   (history-init-advices t))
 
-(defcustom history-advised-before-functions '(beginning-of-buffer
+(defcustom history-advised-before-functions '(imenu
+                                              isearch-mode
+                                              beginning-of-buffer
                                               end-of-buffer)
   "Add history automaticaly before executing these functions'. 
 See `advice' feature."
