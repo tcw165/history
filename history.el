@@ -487,7 +487,7 @@ the history will be deleted immediately."
         ;; Add to databse but avoid duplicates.
         (when (history-add? thing)
           ;; Discard old histories.
-          (and history-stack (>= history-index 0)
+          (and history-stack (> (length history-stack) 1)
                (let ((current (nthcdr history-index history-stack)))
                  (setq history-stack (cdr current))))
           ;; Add new history.
