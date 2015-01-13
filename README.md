@@ -32,9 +32,10 @@ Basic Concept - Linked List Liked
 * Add a new history into the database:
 
 ```
-  (1) - (2) - (3) - (6)
-                     ^ index, histories behind index will be discard,
-                       and new one will be appended to the end.
+  (1) - (2) - (3) - (new)
+                      ^ index
+histories behind index will be discard,
+and new one will be appended to the end.
 ```
 
 Usage - First Step, Enable `history-mode`
@@ -59,7 +60,17 @@ Usage - First Step, Enable `history-mode`
 
 Advanced Usage
 --------------
-* `M-x` **`history-setup-hooks`** to add history automatically for you for specific functions!!!
+* `M-x` **`history-setup-hooks`** to **add history automatically for you for specific functions!** See `history-advised-before-functions` and `history-advised-after-functions` for details.
+
+Example:
+
+```lisp
+;; Add history before `find-tag'.
+(add-to-list 'history-advised-before-functions 'find-tag-noselect t)
+
+;; Add history before `find-file'.
+(add-to-list 'history-advised-before-functions 'find-file-noselect t)
+```
 
 Customization
 -------------
