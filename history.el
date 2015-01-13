@@ -123,18 +123,30 @@
   :group 'history)
 
 (defface history-prompt
-  '((t (:inherit 'minibuffer-prompt)))
+  '((t (:inherit minibuffer-prompt :height 1.3)))
   "Face of prompt when calling `history-goto-history'."
   :group 'history-face)
 
 (defface history-current-history
-  '((t (:foreground "black" :background "gold1" :widget 'bold)))
-  "Face of symbol for current history when calling `history-goto-history'."
+  '((t (:foreground "black" :background "gold1" :weight bold :height 1.8)))
+  "Face for current history. See `history-histories-string'."
+  :group 'history-face)
+
+(defface history-current-temp-history
+  '((t (:inherit history-current-history :underline t)))
+  "Face for current history which is also a temporary history. 
+See `history-histories-string'."
   :group 'history-face)
 
 (defface history-other-history
-  '((t (:foreground "dim gray" :background "#d1f5ea")))
-  "Face of symbol for other history when calling `history-goto-history'."
+  '((t (:foreground "dim gray" :background "#d1f5ea" :height 1.3)))
+  "Face for other history. See `history-histories-string'."
+  :group 'history-face)
+
+(defface history-temp-history
+  '((t (:inherit history-other-history :underline t)))
+  "Face for other history which is also a temporary history. 
+See `history-histories-string'."
   :group 'history-face)
 
 (defcustom history-history-max 64
@@ -262,11 +274,6 @@ whether `history-window-local-history' is true or false."
           (setq history-stack global-stack
                 history-index global-index))))
 
-(defun history-temp-add? ()
-  "Is it ready to add a temporary history."
-  ;; If current point is far away to the one of current history.
-  (null (plist-get (nth history-index history-stack) :temp)))
-
 (defun history-create-history (save-thing? temp?)
   "Create a history."
   (let ((thing (thing-at-point 'symbol t))
@@ -381,13 +388,19 @@ whether `history-window-local-history' is true or false."
                                      (- total (or history-index 0)) total)
                              'face 'history-prompt))
          value)
-    (loop for i from 0 below total do
-          (setq value (concat value
-                              (if (= i (- total 1 history-index))
+    (dolist (history history-stack)
+      (setq value (concat (if (eq history (nth history-index history-stack))
+                              (if (plist-get history :temp)
                                   (propertize "*"
-                                              'face 'history-current-history)
+                                              'face 'history-current-temp-history)
+                                (propertize "*"
+                                            'face 'history-current-history))
+                            (if (plist-get history :temp)
                                 (propertize "."
-                                            'face 'history-other-history)))))
+                                            'face 'history-temp-history)
+                              (propertize "."
+                                          'face 'history-other-history)))
+                          value)))
     (concat prompt value)))
 
 (defun history-undefined ()
