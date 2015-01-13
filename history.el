@@ -203,19 +203,21 @@ See `advice' feature."
                      (point))))
     (= line-pos1 line-pos2)))
 
-(defun history-add? (&optional thing)
+(defun history-add? (new-history)
   "Check readiness to add history, like avoiding duplicates."
   (if history-stack
       (let* ((history (nth history-index history-stack))
              (marker (plist-get history :marker))
              (buffer (marker-buffer marker))
              (pos (marker-position marker))
-             (symbol (plist-get history :symbol)))
+             (symbol (plist-get history :symbol))
+             ;; New history
+             (new-symbol (plist-get new-history :symbol)))
         (not (and (eq (current-buffer) buffer)
                   (history-same-line? (point) pos)
                   (cond
                    (symbol
-                    (equal thing symbol))
+                    (equal new-symbol symbol))
                    (t
                     (= (point) pos))))))
     t))
@@ -260,28 +262,65 @@ whether `history-window-local-history' is true or false."
           (setq history-stack global-stack
                 history-index global-index))))
 
-(defun history-remove-invalid-history ()
-  "Go through the histories and check each buffer's validness."
-  (dolist (history history-stack)
-    (let* ((marker (plist-get history :marker))
-           (buffer (marker-buffer marker))
-           (pos (marker-position marker))
-           (symbol (plist-get history :symbol)))
-      (if (buffer-live-p buffer)
-          ;; If need to compare thing at point with history.
-          (when symbol
-            (with-current-buffer buffer
-              (save-excursion
-                (goto-char pos)
-                (unless (equal symbol (thing-at-point 'symbol t))
-                  ;; Remove it if thing at point doesn't match history.
-                  (setq history-stack (delq history history-stack))))))
-        ;; Remove it if its buffer was killed.
-        (setq history-stack (delq history history-stack)))))
-  ;; Update index if necessary.
-  (when (and history-stack
-             (>= history-index (length history-stack)))
-    (setq history-index (1- (length history-stack)))))
+(defun history-temp-add? ()
+  "Is it ready to add a temporary history."
+  ;; If current point is far away to the one of current history.
+  (null (plist-get (nth history-index history-stack) :temp)))
+
+(defun history-create-history (save-thing? temp?)
+  "Create a history."
+  (let ((thing (thing-at-point 'symbol t))
+        (history (list :marker (copy-marker (point) t)
+                       :window-start (window-start))))
+    ;; Save the symbol string if SAVE-THING? is t.
+    (and save-thing? thing
+         (setq history (plist-put history :symbol thing)))
+    ;; Make it a temporary entry if TEMP? is t.
+    (and temp?
+         (setq history (plist-put history :temp t)))
+    history))
+
+(defun history-sync-max ()
+  "Keep total amount of history less than `history-history-max'."
+  (and (> (length history-stack) history-history-max)
+       (setcdr (nthcdr (1- history-history-max) history-stack) nil)))
+
+(defun history-push-history (history)
+  "Push history, which is exactly using `push'. For instance:
+ <-- old    new -->
+ (0) (1) (2) (3)
+      ^ index
+ (0) (1) (new)
+           ^ index"
+  (when (history-add? history)
+    (if history-from-scratch?
+        ;; Discard all histories if navigating beyound the oldest one.
+        (setq history-stack nil)
+      ;; Just discard the histories behind the index.
+      (and history-stack (>= history-index 1)
+           (let ((current (nthcdr history-index history-stack)))
+             (setq history-stack (cdr current)))))
+    ;; Add new history.
+    (push history history-stack)
+    (setq history-index 0)
+    ;; Keep maximum.
+    (history-sync-max)))
+
+;; (setq a '(1 2 3 4 5))
+;; (setcdr (nthcdr 2 a) nil)
+;; (append (list 0) a)
+(defun history-insert-history (history)
+  "Insert history at current index. For instance:
+ <-- old        new -->
+ (0) (1) (2) (3)
+          ^ index
+ (0) (1) (2) (new) (3)
+               ^ index"
+  (let ((tail (append (list history)
+                      (nthcdr history-index history-stack))))
+    (if (= history-index 0)
+        (setq history-stack tail)
+      (setcdr (nthcdr (1- history-index) history-stack) tail))))
 
 (defun history-move-history (step)
   (setq history-index (+ history-index step)
@@ -307,6 +346,49 @@ whether `history-window-local-history' is true or false."
     (set-window-start nil wpos)
     ;; Update point.
     (goto-char pos)))
+
+(defun history-remove-invalid-history (&optional remove-temp?)
+  "Go through the histories and check each buffer's validness."
+  (dolist (history history-stack)
+    (let* ((marker (plist-get history :marker))
+           (buffer (marker-buffer marker))
+           (pos (marker-position marker))
+           (symbol (plist-get history :symbol))
+           (temp? (plist-get history :temp)))
+      (if (buffer-live-p buffer)
+          (cond
+           ;; Remove it if thing at point doesn't match history.
+           (symbol
+            (with-current-buffer buffer
+              (save-excursion
+                (goto-char pos)
+                (unless (equal symbol (thing-at-point 'symbol t))
+                  (setq history-stack (delq history history-stack))))))
+           ;; Remove temporary history.
+           ((and remove-temp? temp?)
+            (setq history-stack (delq history history-stack))))
+        ;; Remove it if its buffer was killed.
+        (setq history-stack (delq history history-stack)))))
+  ;; Update index if necessary.
+  (when (and history-stack
+             (>= history-index (length history-stack)))
+    (setq history-index (1- (length history-stack)))))
+
+(defun history-histories-string ()
+  "Histories list string."
+  (let* ((total (length history-stack))
+         (prompt (propertize (format "History %d/%d: "
+                                     (- total (or history-index 0)) total)
+                             'face 'history-prompt))
+         value)
+    (loop for i from 0 below total do
+          (setq value (concat value
+                              (if (= i (- total 1 history-index))
+                                  (propertize "*"
+                                              'face 'history-current-history)
+                                (propertize "."
+                                            'face 'history-other-history)))))
+    (concat prompt value)))
 
 (defun history-undefined ()
   "Empty command for keymap binding."
@@ -343,22 +425,6 @@ whether `history-window-local-history' is true or false."
   (interactive)
   (delete-minibuffer-contents)
   (exit-minibuffer))
-
-(defun history-histories-string ()
-  "Histories list string."
-  (let* ((total (length history-stack))
-         (prompt (propertize (format "History %d/%d: "
-                                     (- total (or history-index 0)) total)
-                             'face 'history-prompt))
-         value)
-    (loop for i from 0 below total do
-          (setq value (concat value
-                              (if (= i (- total 1 history-index))
-                                  (propertize "*"
-                                              'face 'history-current-history)
-                                (propertize "."
-                                            'face 'history-other-history)))))
-    (concat prompt value)))
 
 (defun history-init-advices (activate?)
   "Advise functions to call `history-add-history'.
@@ -482,29 +548,8 @@ the history will be deleted immediately."
       (dolist (ignore history-ignore-buffer-names)
         (when (string-match ignore (buffer-name))
           (throw 'ignore nil)))
-      (history-remove-invalid-history)
-      (let ((thing (thing-at-point 'symbol t))
-            history)
-        ;; Create history, including position and window-start.
-        (setq history (plist-put history :marker (copy-marker (point) t))
-              history (plist-put history :window-start (window-start)))
-        ;; Cache the symbol string if necessary.
-        (and save-thing? thing
-             (setq history (plist-put history :symbol thing)))
-        ;; Add to databse but avoid duplicates.
-        (when (history-add? thing)
-          ;; Discard old histories.
-          (if history-from-scratch?
-              (setq history-stack nil)
-            (and history-stack (>= history-index 1)
-                 (let ((current (nthcdr history-index history-stack)))
-                   (setq history-stack (cdr current)))))
-          ;; Add new history.
-          (push history history-stack)
-          (setq history-index 0)
-          ;; Keep total amount of history less than `history-history-max'.
-          (and (> (length history-stack) history-history-max)
-               (setcdr (nthcdr (1- history-history-max) history-stack) nil))))
+      (history-remove-invalid-history t)
+      (history-push-history (history-create-history save-thing? nil))
       (when (called-interactively-p)
         (message (history-histories-string))))))
 
@@ -567,14 +612,18 @@ the history will be deleted immediately."
   (history-do
     (when history-stack
       (history-remove-invalid-history)
+      ;; If point is far away from current history, use current history.
+      ;; If point is close from current history, use next/previous history.
       (let* ((history (nth history-index history-stack))
              (marker (plist-get history :marker))
              (buffer (marker-buffer marker))
              (pos (marker-position marker)))
-        ;; If point is far away from current history, use current history.
-        ;; If point is close from current history, use next/previous history.
-        (when (and (eq buffer (current-buffer))
-                   (history-same-line? (point) pos))
+        (if (and (eq buffer (current-buffer))
+                 (history-same-line? (point) pos))
+            (history-move-history 1)
+          ;; Save current point as a temporary history.
+          (history-remove-invalid-history t)
+          (history-insert-history (history-create-history nil t))
           (history-move-history 1)))
       ;; Use history.
       (history-use-current-history))
