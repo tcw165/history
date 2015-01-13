@@ -5,7 +5,7 @@
 ;; Author: boyw165
 ;; Version: 20141206.1800
 ;; URL: https://github.com/boyw165/history
-;; Package-Requires: ((emacs "24.3") (cl-lib "0.5"))
+;; Package-Requires: ((emacs "24.3"))
 ;;
 ;; This file is NOT part of GNU Emacs.
 ;;
@@ -108,7 +108,6 @@
 (require 'thingatpt)
 (require 'tool-bar)
 (require 'advice)
-(eval-when-compile (require 'cl))
 
 (defgroup history nil
   "A lightweight history utility."
@@ -560,7 +559,7 @@ the history will be deleted immediately."
           (throw 'ignore nil)))
       (history-remove-invalid-history t)
       (history-push-history (history-create-history save-thing? nil))
-      (when (called-interactively-p)
+      (when (called-interactively-p 'interactive)
         (message (history-histories-string))))))
 
 ;;;###autoload
