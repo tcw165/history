@@ -313,9 +313,6 @@ whether `history-window-local-history' is true or false."
     ;; Keep maximum.
     (history-sync-max)))
 
-;; (setq a '(1 2 3 4 5))
-;; (setcdr (nthcdr 2 a) nil)
-;; (append (list 0) a)
 (defun history-insert-history (history)
   "Insert history at current index. For instance:
  <-- old        new -->
