@@ -64,7 +64,7 @@
 ;;
 ;; Advanced Usage
 ;; --------------
-;; * M-x `history-setup-advice'
+;; * M-x `history-configuration'
 ;;   Add history for you automatically for specific functions!!!
 ;;
 ;; Customization
@@ -454,10 +454,10 @@ See `history-advised-before-functions'
               (history-add-history))))
         history-advised-after-functions))
 
-(defun history-setup-advice ()
-  "Menu command for setting hooks."
+(defun history-configuration ()
+  "Configure history group."
   (interactive)
-  (customize-group 'history-advice))
+  (customize-group 'history))
 
 (defun history-enable? ()
   "Menu command for enabling/disabling menu item."
@@ -480,7 +480,7 @@ See `history-advised-before-functions'
       '(menu-item "Window Local History" history-toggle-window-local-history
                   :button (:toggle . history-window-local-history)))
     (define-key-after map [setup-hook]
-      '(menu-item "Setup Adviced Functions" history-setup-advice))
+      '(menu-item "Configuration" history-configuration))
     (define-key-after map [history-separator-1]
       '(menu-item "--single-line"))
     (define-key-after map [add-history]

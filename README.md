@@ -60,17 +60,18 @@ Usage - First Step, Enable `history-mode`
 
 Advanced Usage
 --------------
-* `M-x` **`history-setup-hooks`** to **add history automatically for you for specific functions!** See `history-advised-before-functions` and `history-advised-after-functions` for details.
+* Configure `history-advised-before-functions` and `history-advised-after-functions` **to add history automatically for you.**
 
 Example:
 
 ```lisp
-;; Add history before `find-tag'.
+;; Add history just before `find-tag' executed.
 (add-to-list 'history-advised-before-functions 'find-tag-noselect t)
 
-;; Add history before `find-file'.
+;; Add history just before `find-file' executed.
 (add-to-list 'history-advised-before-functions 'find-file-noselect t)
 ```
+> Advise primitive functions might cause infinite loop, strongly suggest you NOT to advise them.
 
 Customization
 -------------
