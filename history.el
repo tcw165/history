@@ -1,6 +1,6 @@
 ;;; history.el --- History utility for source code navigation
 ;;
-;; Copyright (C) 2014
+;; Copyright (C) 2014-2015
 ;;
 ;; Author: boyw165
 ;; Version: 20141206.1800
