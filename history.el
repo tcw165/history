@@ -202,6 +202,16 @@ See `advice' feature."
 (defvar history-window nil
   "The cached window for `history-goto-history' usage.")
 
+(defun history-thingatpt (thing)
+  "Adapter to `thing-at-point' for compatibility of Emacs 24.3 and 24.4."
+  (cond
+   ((= 4 emacs-minor-version) (thing-at-point thing t))
+   ((= 3 emacs-minor-version)
+    (let ((bounds (bounds-of-thing-at-point thing)))
+      (and bounds
+           (buffer-substring-no-properties (car bounds)
+                                           (cdr bounds)))))))
+
 (defun history-same-line? (pos1 pos2)
   "Is POS2 and POS2 (must in the same buffer) at same line."
   (let ((line-pos1 (save-excursion
@@ -275,7 +285,7 @@ whether `history-window-local-history' is true or false."
 
 (defun history-create-history (save-thing? temp?)
   "Create a history."
-  (let ((thing (thing-at-point 'symbol t))
+  (let ((thing (history-thingatpt 'symbol))
         (history (list :marker (copy-marker (point) t)
                        :window-start (window-start))))
     ;; Save the symbol string if SAVE-THING? is t.
@@ -365,7 +375,7 @@ whether `history-window-local-history' is true or false."
             (with-current-buffer buffer
               (save-excursion
                 (goto-char pos)
-                (unless (equal symbol (thing-at-point 'symbol t))
+                (unless (equal symbol (history-thingatpt 'symbol))
                   (setq history-stack (delq history history-stack))))))
            ;; Remove temporary history.
            ((and remove-temp? temp?)
