@@ -153,7 +153,7 @@ See `history-histories-string'."
   :type 'integer
   :group 'history)
 
-(defcustom history-ignore-buffer-names '("\\*.*\\*")
+(defcustom history-ignore-buffer-names '("^\\*.*\\*$")
   "Ths REGEXP list for matched ignore buffer names."
   :type '(repeat regexp)
   :group 'history)
@@ -285,6 +285,7 @@ whether `history-window-local-history' is true or false."
 
 (defun history-create-history (save-thing? temp?)
   "Create a history."
+  (current-buffer)
   (let ((thing (history-thingatpt 'symbol))
         (history (list :marker (copy-marker (point) t)
                        :window-start (window-start))))
@@ -320,7 +321,9 @@ whether `history-window-local-history' is true or false."
     (push history history-stack)
     (setq history-index 0)
     ;; Keep maximum.
-    (history-sync-max)))
+    (history-sync-max)
+    ;; Return history.
+    history-stack))
 
 (defun history-insert-history (history)
   "Insert history at current index. For instance:
@@ -385,7 +388,9 @@ whether `history-window-local-history' is true or false."
   ;; Update index if necessary.
   (when (and history-stack
              (>= history-index (length history-stack)))
-    (setq history-index (1- (length history-stack)))))
+    (setq history-index (1- (length history-stack))))
+  ;; Return current history.
+  history-stack)
 
 (defun history-histories-string ()
   "Histories list string."
