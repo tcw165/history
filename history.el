@@ -517,32 +517,22 @@ See `history-advised-before-functions'
                   :enable (history-enable?))))
   ;; Tool-bar buttons.
   (when tool-bar-mode
-    (define-key-after tool-bar-map [history-separator-1]
-      '("--")
-      'paste)
     (define-key-after tool-bar-map [add-history]
       '(menu-item "Add History" history-add-history
                   :image (find-image '((:type xpm :file "images/add-history.xpm")))
-                  :enable (not (minibufferp)))
-      'history-separator-1)
+                  :enable (not (minibufferp))))
     (define-key-after tool-bar-map [previous-history]
       '(menu-item "Previous History" history-prev-history
                   :image (find-image '((:type xpm :file "images/prev-history.xpm")))
-                  :enable (history-enable?))
-      'add-history)
+                  :enable (history-enable?)))
     (define-key-after tool-bar-map [next-history]
       '(menu-item "Next History" history-next-history
                   :image (find-image '((:type xpm :file "images/next-history.xpm")))
-                  :enable (history-enable?))
-      'previous-history)
+                  :enable (history-enable?)))
     (define-key-after tool-bar-map [goto-history]
       '(menu-item "Goto History" history-goto-history
                   :image (find-image '((:type xpm :file "images/goto-history.xpm")))
-                  :enable (history-enable?))
-      'next-history)
-    (define-key-after tool-bar-map [history-separator-2]
-      '("--")
-      'goto-history)))
+                  :enable (history-enable?)))))
 
 (defun history-remove-menu-items ()
   "Remove menu and tool-bar buttons."
@@ -550,12 +540,10 @@ See `history-advised-before-functions'
   (define-key global-map [menu-bar edit history-group] nil)
   ;; Tool-bar buttons.
   (when tool-bar-mode
-    (define-key tool-bar-map [history-separator-1] nil)
     (define-key tool-bar-map [add-history] nil)
     (define-key tool-bar-map [previous-history] nil)
     (define-key tool-bar-map [next-history] nil)
-    (define-key tool-bar-map [goto-history] nil)
-    (define-key tool-bar-map [history-separator-2] nil)))
+    (define-key tool-bar-map [goto-history] nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
