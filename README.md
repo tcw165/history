@@ -1,4 +1,5 @@
 [![MELPA](http://melpa.org/packages/history-badge.svg)](http://melpa.org/#/history)
+[![MELPA Stable](http://stable.melpa.org/packages/history-badge.svg)](http://stable.melpa.org/#/history)
 [![TRAVIS-CI](https://travis-ci.org/boyw165/history.svg?branch=master)](https://travis-ci.org/boyw165/history)
 
 history.el - History Utility For Code Navigation
