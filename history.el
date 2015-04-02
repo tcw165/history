@@ -190,6 +190,21 @@ See `advice' feature."
   :set 'history-set-advices
   :group 'history-advice)
 
+(defvar history-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [remap self-insert-command] 'history-undefined)
+    (define-key map (kbd "<up>") 'history-undefined)
+    (define-key map (kbd "<down>") 'history-undefined)
+    (define-key map (kbd "<left>") 'history-preview-prev-history)
+    (define-key map (kbd "<right>") 'history-preview-next-history)
+    (define-key map (kbd "C-p") 'history-preview-prev-history)
+    (define-key map (kbd "C-n") 'history-preview-next-history)
+    (define-key map (kbd "<return>") 'exit-minibuffer)
+    (define-key map (kbd "q") 'history-preview-cancel-history)
+    (define-key map (kbd "<escape>") 'history-preview-cancel-history)
+    map)
+  "The key map for browsing the history.")
+
 (defvar history-stack nil
   "The history database. See `history-add-history' for details.")
 
@@ -583,21 +598,9 @@ the history will be deleted immediately."
              (str (history-histories-string))
              (index (1+ (string-match "\*" str)))
              (buffer (current-buffer))
-             (pos (point))
-             (map (let ((map (make-sparse-keymap)))
-                    (define-key map [remap self-insert-command] 'history-undefined)
-                    (define-key map (kbd "<up>") 'history-undefined)
-                    (define-key map (kbd "<down>") 'history-undefined)
-                    (define-key map (kbd "<left>") 'history-preview-prev-history)
-                    (define-key map (kbd "<right>") 'history-preview-next-history)
-                    (define-key map (kbd "C-p") 'history-preview-prev-history)
-                    (define-key map (kbd "C-n") 'history-preview-next-history)
-                    (define-key map (kbd "<return>") 'exit-minibuffer)
-                    (define-key map (kbd "q") 'history-preview-cancel-history)
-                    (define-key map (kbd "<escape>") 'history-preview-cancel-history)
-                    map)))
+             (pos (point)))
         (history-use-current-history)
-        (if (string= (read-from-minibuffer "" (cons str index) map) "")
+        (if (string= (read-from-minibuffer "" (cons str index) history-map) "")
             (progn
               ;; Not to use history, revert buffer and point to original status.
               (setq history-index cached-history-index)
