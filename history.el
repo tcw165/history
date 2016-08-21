@@ -149,12 +149,12 @@ See `history-histories-string'."
   :group 'history-face)
 
 (defcustom history-history-max 64
-  "The maximum lenght of history."
+  "The maximum length of history."
   :type 'integer
   :group 'history)
 
 (defcustom history-ignore-buffer-names '("^\\*.*\\*$")
-  "Ths REGEXP list for matched ignore buffer names."
+  "The REGEXP list for matched ignore buffer names."
   :type '(repeat regexp)
   :group 'history)
 
@@ -175,7 +175,7 @@ to use window-local history; nil means to use a global history."
                                               isearch-mode
                                               beginning-of-buffer
                                               end-of-buffer)
-  "Add history automaticaly before executing these functions'. 
+  "Add history automatically before executing these functions'. 
 See `advice' feature."
   :type '(repeat function)
   :initialize 'custom-initialize-default
@@ -183,7 +183,7 @@ See `advice' feature."
   :group 'history-advice)
 
 (defcustom history-advised-after-functions '()
-  "Add history automaticaly after executing these functions'. 
+  "Add history automatically after executing these functions'. 
 See `advice' feature."
   :type '(repeat function)
   :initialize 'custom-initialize-default
@@ -326,7 +326,7 @@ whether `history-window-local-history' is true or false."
            ^ index"
   (when (history-add? history)
     (if history-from-scratch?
-        ;; Discard all histories if navigating beyound the oldest one.
+        ;; Discard all histories if navigating beyond the oldest one.
         (setq history-stack nil)
       ;; Just discard the histories behind the index.
       (and history-stack (>= history-index 1)
