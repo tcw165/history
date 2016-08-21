@@ -489,12 +489,17 @@ See `history-advised-before-functions'
   (interactive)
   (customize-group 'history))
 
+(defun history-ignore-buffer? (&optional buffer)
+  (let ((name (buffer-name buffer)))
+    (or (null name)
+        (catch 'ignore
+          (dolist (ignore history-ignore-buffer-names)
+            (when (string-match ignore name)
+              (throw 'ignore t)))))))
+
 (defun history-enable? ()
   "Menu command for enabling/disabling menu item."
-  (catch 'ignore
-    (dolist (ignore history-ignore-buffer-names)
-      (when (string-match ignore (buffer-name))
-        (throw 'ignore nil)))
+  (unless (history-ignore-buffer?)
     (> (length (if history-window-local-history
                    (window-parameter nil 'history-stack)
                  history-stack)) 0)))
@@ -571,10 +576,7 @@ a comparison in checking algorithm when navigating to it. If they are not matche
 the history will be deleted immediately."
   (interactive '(t))
   (history-do
-    (catch 'ignore
-      (dolist (ignore history-ignore-buffer-names)
-        (when (string-match ignore (buffer-name))
-          (throw 'ignore nil)))
+    (unless (history-ignore-buffer?)
       (history-remove-invalid-history t)
       (history-push-history (history-create-history save-thing? nil))
       (when (called-interactively-p 'interactive)
