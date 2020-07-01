@@ -202,6 +202,7 @@ See `advice' feature."
     (define-key map (kbd "<return>") 'exit-minibuffer)
     (define-key map (kbd "q") 'history-preview-cancel-history)
     (define-key map (kbd "<escape>") 'history-preview-cancel-history)
+    (define-key map (kbd "C-g") 'history-preview-cancel-history)
     map)
   "The key map for browsing the history.")
 
