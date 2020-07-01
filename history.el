@@ -199,7 +199,7 @@ See `advice' feature."
     (define-key map (kbd "<right>") 'history-preview-next-history)
     (define-key map (kbd "C-p") 'history-preview-prev-history)
     (define-key map (kbd "C-n") 'history-preview-next-history)
-    (define-key map (kbd "<return>") 'exit-minibuffer)
+    (define-key map (kbd "RET") 'exit-minibuffer)
     (define-key map (kbd "q") 'history-preview-cancel-history)
     (define-key map (kbd "<escape>") 'history-preview-cancel-history)
     map)
